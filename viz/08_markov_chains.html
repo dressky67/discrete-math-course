@@ -1,0 +1,504 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Симулятор марковских цепей и PageRank | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --gold: #facc15;
+      --purple: #c084fc;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 950px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    canvas {
+      width: 100%;
+      height: 380px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .matrix-table {
+      border-collapse: collapse;
+      margin: 0 auto 16px;
+    }
+    .matrix-table th, .matrix-table td {
+      padding: 6px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .matrix-table input {
+      width: 50px;
+      padding: 4px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: monospace;
+      text-align: center;
+    }
+    .hist-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .hist-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+    .hist-label {
+      width: 80px;
+      font-weight: bold;
+    }
+    .hist-bar-bg {
+      flex: 1;
+      height: 18px;
+      background: #090d16;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+    .hist-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.15s ease;
+    }
+    .hist-val {
+      width: 60px;
+      font-family: monospace;
+      text-align: right;
+    }
+    .info-bar {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #bae6fd;
+      font-size: 0.85rem;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Симулятор дискретных цепей Маркова</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 8: Стохастические графы, PageRank и стационарное распределение</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Граф и Монте-Карло -->
+    <div class="card">
+      <div class="card-title">
+        <span>Граф состояний и симуляция блуждания</span>
+        <div class="btn-group" style="margin-bottom: 0;">
+          <button id="btn-run" onclick="toggleSim()" style="background: var(--accent); color: #0f172a; font-weight: bold;">Старт симуляции</button>
+          <button onclick="runFastSteps(5000)">+5000 шагов</button>
+          <button onclick="resetStats()">Сброс</button>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="loadPreset('ecommerce')">Интернет-магазин (Пример 8.2)</button>
+        <button onclick="loadPreset('pagerank')">Сеть PageRank</button>
+        <button onclick="loadPreset('weather')">Погодная модель</button>
+      </div>
+
+      <canvas id="markov-canvas" width="600" height="380"></canvas>
+
+      <div class="card-title" style="margin-top: 20px; font-size: 1.05rem;">
+        Эмпирические частоты (Монте-Карло) vs Теория ($\pi$)
+        <span style="font-size: 0.8rem; color: var(--gold);" id="total-steps">Шагов: 0</span>
+      </div>
+      <div class="hist-container" id="hist-container"></div>
+    </div>
+
+    <!-- Правая колонка: Матрица перехода и сходимость -->
+    <div class="card">
+      <div class="card-title">Матрица перехода P (стохастическая)</div>
+
+      <div style="overflow-x: auto;">
+        <table class="matrix-table" id="matrix-table"></table>
+      </div>
+
+      <div class="card-title" style="margin-top: 20px; font-size: 1.05rem;">
+        Сходимость степени матрицы $P^n \to \Pi$
+        <div class="btn-group" style="margin-bottom: 0;">
+          <button onclick="calcPn(1)">n=1</button>
+          <button onclick="calcPn(2)">n=2</button>
+          <button onclick="calcPn(5)">n=5</button>
+          <button onclick="calcPn(20)">n=20</button>
+        </div>
+      </div>
+
+      <div id="pn-display" style="background: #090d16; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; line-height: 1.6;">
+        Матрица $P^n$ вычисляется...
+      </div>
+
+      <div class="info-bar" id="stat-vec-box" style="margin-top: 16px;">
+        <strong>Стационарный вектор &pi;:</strong> решение системы &pi;P = &pi;, &sum;&pi;<sub>i</sub> = 1.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('markov-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let stateNames = ['Home', 'Catalog', 'Cart'];
+    let stateColors = ['#38bdf8', '#c084fc', '#4ade80'];
+    let P = [
+      [0.2, 0.7, 0.1],
+      [0.3, 0.4, 0.3],
+      [0.1, 0.3, 0.6]
+    ];
+
+    let currentState = 0;
+    let visitCounts = [0, 0, 0];
+    let totalSteps = 0;
+    let simInterval = null;
+
+    function loadPreset(name) {
+      stopSim();
+      if (name === 'ecommerce') {
+        stateNames = ['Home', 'Catalog', 'Cart'];
+        stateColors = ['#38bdf8', '#c084fc', '#4ade80'];
+        P = [
+          [0.2, 0.7, 0.1],
+          [0.3, 0.4, 0.3],
+          [0.1, 0.3, 0.6]
+        ];
+      } else if (name === 'pagerank') {
+        stateNames = ['Page A', 'Page B', 'Page C'];
+        stateColors = ['#facc15', '#38bdf8', '#ec4899'];
+        P = [
+          [0.05, 0.475, 0.475],
+          [0.05, 0.05, 0.90],
+          [0.90, 0.05, 0.05]
+        ];
+      } else if (name === 'weather') {
+        stateNames = ['Солнечно', 'Облачно', 'Дождь'];
+        stateColors = ['#facc15', '#94a3b8', '#38bdf8'];
+        P = [
+          [0.7, 0.2, 0.1],
+          [0.3, 0.4, 0.3],
+          [0.2, 0.4, 0.4]
+        ];
+      }
+      resetStats();
+      renderMatrixTable();
+      calcPn(20);
+      drawGraph();
+    }
+
+    function resetStats() {
+      totalSteps = 0;
+      visitCounts = stateNames.map(() => 0);
+      currentState = 0;
+      updateHist();
+      drawGraph();
+    }
+
+    function renderMatrixTable() {
+      const table = document.getElementById('matrix-table');
+      let html = '<thead><tr><th>Откуда \\ Куда</th>';
+      stateNames.forEach(n => { html += `<th>${n}</th>`; });
+      html += '</tr></thead><tbody>';
+
+      for (let i = 0; i < stateNames.length; i++) {
+        html += `<tr><th>${stateNames[i]}</th>`;
+        for (let j = 0; j < stateNames.length; j++) {
+          html += `<td><input type="number" step="0.05" min="0" max="1" value="${P[i][j]}" onchange="onMatrixChange(${i}, ${j}, this.value)"></td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function onMatrixChange(i, j, val) {
+      P[i][j] = Math.max(0, parseFloat(val) || 0);
+      // Re-normalize row i
+      let sum = P[i].reduce((a, b) => a + b, 0);
+      if (sum > 0) {
+        for (let k = 0; k < stateNames.length; k++) {
+          P[i][k] = Number((P[i][k] / sum).toFixed(3));
+        }
+      }
+      renderMatrixTable();
+      calcPn(20);
+      drawGraph();
+    }
+
+    function getNodePositions() {
+      const cx = 300, cy = 190, r = 130;
+      const n = stateNames.length;
+      return stateNames.map((_, i) => {
+        const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+        return {
+          x: cx + r * Math.cos(angle),
+          y: cy + r * Math.sin(angle)
+        };
+      });
+    }
+
+    function drawGraph() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const pos = getNodePositions();
+
+      // Draw transition edges
+      for (let i = 0; i < pos.length; i++) {
+        for (let j = 0; j < pos.length; j++) {
+          const prob = P[i][j];
+          if (prob > 0.01) {
+            const p1 = pos[i];
+            const p2 = pos[j];
+
+            if (i === j) {
+              // Self loop
+              const angle = Math.atan2(p1.y - 190, p1.x - 300);
+              const lx = p1.x + 36 * Math.cos(angle);
+              const ly = p1.y + 36 * Math.sin(angle);
+              ctx.beginPath();
+              ctx.arc(lx, ly, 18, 0, 2 * Math.PI);
+              ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+
+              ctx.fillStyle = '#94a3b8';
+              ctx.font = '11px monospace';
+              ctx.fillText(prob.toFixed(2), lx + 8 * Math.cos(angle), ly + 8 * Math.sin(angle));
+            } else {
+              // Directed arc
+              const dx = p2.x - p1.x, dy = p2.y - p1.y;
+              const mx = (p1.x + p2.x) / 2 - dy * 0.16;
+              const my = (p1.y + p2.y) / 2 + dx * 0.16;
+
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.quadraticCurveTo(mx, my, p2.x, p2.y);
+              ctx.strokeStyle = (currentState === i) ? 'rgba(56, 189, 248, 0.7)' : 'rgba(100, 116, 139, 0.35)';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              // Prob label
+              ctx.fillStyle = '#94a3b8';
+              ctx.font = '11px monospace';
+              ctx.fillText(prob.toFixed(2), mx, my);
+            }
+          }
+        }
+      }
+
+      // Draw states
+      pos.forEach((p, idx) => {
+        const isCurrent = (currentState === idx);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 28, 0, 2 * Math.PI);
+        ctx.fillStyle = isCurrent ? '#facc15' : '#1e293b';
+        ctx.fill();
+        ctx.lineWidth = isCurrent ? 4 : 2;
+        ctx.strokeStyle = stateColors[idx];
+        ctx.stroke();
+
+        ctx.fillStyle = isCurrent ? '#0f172a' : '#f8fafc';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(stateNames[idx], p.x, p.y);
+      });
+    }
+
+    function stepSim() {
+      visitCounts[currentState]++;
+      totalSteps++;
+
+      // Pick next state according to P[currentState]
+      const r = Math.random();
+      let cum = 0;
+      for (let next = 0; next < stateNames.length; next++) {
+        cum += P[currentState][next];
+        if (r <= cum || next === stateNames.length - 1) {
+          currentState = next;
+          break;
+        }
+      }
+
+      updateHist();
+      drawGraph();
+    }
+
+    function toggleSim() {
+      if (simInterval) {
+        stopSim();
+      } else {
+        document.getElementById('btn-run').textContent = 'Пауза';
+        simInterval = setInterval(stepSim, 200);
+      }
+    }
+
+    function stopSim() {
+      if (simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+        document.getElementById('btn-run').textContent = 'Старт симуляции';
+      }
+    }
+
+    function runFastSteps(n) {
+      for (let s = 0; s < n; s++) {
+        visitCounts[currentState]++;
+        totalSteps++;
+        const r = Math.random();
+        let cum = 0;
+        for (let next = 0; next < stateNames.length; next++) {
+          cum += P[currentState][next];
+          if (r <= cum || next === stateNames.length - 1) {
+            currentState = next;
+            break;
+          }
+        }
+      }
+      updateHist();
+      drawGraph();
+    }
+
+    function updateHist() {
+      document.getElementById('total-steps').textContent = `Шагов: ${totalSteps.toLocaleString()}`;
+      const cont = document.getElementById('hist-container');
+      cont.innerHTML = '';
+
+      stateNames.forEach((name, idx) => {
+        const count = visitCounts[idx];
+        const pct = totalSteps > 0 ? (count / totalSteps * 100).toFixed(1) : 0;
+
+        const row = document.createElement('div');
+        row.className = 'hist-row';
+        row.innerHTML = `
+          <div class="hist-label" style="color:${stateColors[idx]}">${name}</div>
+          <div class="hist-bar-bg">
+            <div class="hist-bar-fill" style="width:${pct}%; background:${stateColors[idx]}"></div>
+          </div>
+          <div class="hist-val">${pct}%</div>
+        `;
+        cont.appendChild(row);
+      });
+    }
+
+    // Matrix exponentiation
+    function matMul(A, B) {
+      const n = A.length;
+      const C = Array.from({ length: n }, () => Array(n).fill(0));
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          for (let k = 0; k < n; k++) C[i][j] += A[i][k] * B[k][j];
+        }
+      }
+      return C;
+    }
+
+    function calcPn(steps) {
+      let M = P.map(row => [...row]);
+      for (let s = 1; s < steps; s++) {
+        M = matMul(M, P);
+      }
+
+      let html = `<strong>Матрица P<sup>${steps}</sup>:</strong><br>`;
+      for (let i = 0; i < M.length; i++) {
+        html += `[ ${M[i].map(x => x.toFixed(4)).join('  ')} ]<br>`;
+      }
+      document.getElementById('pn-display').innerHTML = html;
+
+      const statVec = M[0].map(x => (x * 100).toFixed(2) + '%');
+      document.getElementById('stat-vec-box').innerHTML = `
+        <strong>Теоретический предельный вектор &pi;:</strong><br>
+        [ ${statVec.join(', ')} ]<br>
+        <em>Все строки P<sup>n</sup> становятся одинаковыми &mdash; система забывает начальное состояние!</em>
+      `;
+    }
+
+    // Init
+    loadPreset('ecommerce');
+  </script>
+</body>
+</html>
