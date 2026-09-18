@@ -1,0 +1,535 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Определитель и ориентированная площадь | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --gold: #facc15;
+      --purple: #c084fc;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 950px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    canvas {
+      width: 100%;
+      height: 440px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: crosshair;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .vec-block {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .vec-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .vec-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .vec-row label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .vec-row input {
+      width: 60px;
+      padding: 5px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: monospace;
+      text-align: center;
+    }
+    .metrics-box {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .metric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+    .metric-val {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .cramer-box {
+      margin-top: 20px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    .info-bar {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #bae6fd;
+      font-size: 0.85rem;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Определитель и ориентированная площадь</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 6: Геометрический смысл определителя и правило Крамера</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Холст плоскости -->
+    <div class="card">
+      <div class="card-title">
+        <span>Ориентированный параллелограмм в $\mathbb{R}^2$</span>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Перетаскивайте стрелки векторов мышью</span>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="setPreset('standard')">Стандартный базис</button>
+        <button onclick="setPreset('shear')">Сдвиг (Shear, S=1)</button>
+        <button onclick="setPreset('rotation')">Поворот на 45°</button>
+        <button onclick="setPreset('negative')">Отрицательный det (&minus;1)</button>
+        <button onclick="setPreset('collinear')">Коллинеарные (det = 0)</button>
+      </div>
+
+      <canvas id="det-canvas" width="600" height="440"></canvas>
+
+      <div class="info-bar">
+        Параллелограмм натянут на векторы $v_1$ (желтый) и $v_2$ (голубой). Площадь равна значению $|\det A|$. При смене ориентации цвет заливки меняется с зеленого на красный!
+      </div>
+    </div>
+
+    <!-- Правая колонка: Координаты и Правило Крамера -->
+    <div class="card">
+      <div class="card-title">Координаты векторов-столбцов</div>
+
+      <div class="input-grid">
+        <div class="vec-block">
+          <div class="vec-title" style="color: var(--gold);">
+            <span>Вектор v₁ (Столбец 1)</span>
+          </div>
+          <div class="vec-row">
+            <label>x₁:</label><input type="number" id="v1-x" value="3" step="0.5" oninput="updateFromInputs()">
+            <label>y₁:</label><input type="number" id="v1-y" value="1" step="0.5" oninput="updateFromInputs()">
+          </div>
+        </div>
+
+        <div class="vec-block">
+          <div class="vec-title" style="color: var(--accent);">
+            <span>Вектор v₂ (Столбец 2)</span>
+          </div>
+          <div class="vec-row">
+            <label>x₂:</label><input type="number" id="v2-x" value="1" step="0.5" oninput="updateFromInputs()">
+            <label>y₂:</label><input type="number" id="v2-y" value="3" step="0.5" oninput="updateFromInputs()">
+          </div>
+        </div>
+      </div>
+
+      <div class="metrics-box">
+        <div class="metric-item">
+          <span>Определитель det(A) = x₁y₂ &minus; x₂y₁:</span>
+          <span class="metric-val" id="det-val" style="color: var(--green);">8.00</span>
+        </div>
+        <div class="metric-item">
+          <span>Геометрическая площадь S:</span>
+          <span class="metric-val" id="area-val">8.00</span>
+        </div>
+        <div class="metric-item">
+          <span>Ориентация базиса:</span>
+          <span class="metric-val" id="orient-val" style="font-size: 0.95rem; color: var(--green);">Положительная (&circlearrowleft;)</span>
+        </div>
+      </div>
+
+      <!-- Правило Крамера -->
+      <div class="card-title" style="margin-top: 24px; font-size: 1.05rem;">
+        Решение системы уравнений правилом Крамера
+      </div>
+
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">
+        Система: $v_1 \cdot x + v_2 \cdot y = b$, где вектор свободных членов $b = (c_1, c_2)^T$:
+      </div>
+
+      <div class="vec-row" style="margin-bottom: 12px;">
+        <label>Вектор b: (</label>
+        <input type="number" id="b-x" value="7" step="1" oninput="solveCramer()">
+        <label>,</label>
+        <input type="number" id="b-y" value="5" step="1" oninput="solveCramer()">
+        <label>)</label>
+        <button onclick="solveCramer()" style="margin-left: 10px;">Рассчитать</button>
+      </div>
+
+      <div class="cramer-box" id="cramer-output">
+        Задайте вектор b и нажмите «Рассчитать».
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('det-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let v1 = { x: 3, y: 1 };
+    let v2 = { x: 1, y: 3 };
+    let bVec = { x: 7, y: 5 };
+
+    const origin = { x: 280, y: 240 };
+    const scale = 36; // px per unit
+    let draggedVec = null;
+
+    function setPreset(name) {
+      if (name === 'standard') {
+        v1 = { x: 3, y: 0 };
+        v2 = { x: 0, y: 3 };
+      } else if (name === 'shear') {
+        v1 = { x: 2, y: 0 };
+        v2 = { x: 2, y: 2 };
+      } else if (name === 'rotation') {
+        const rad = Math.PI / 4;
+        const s = 3;
+        v1 = { x: Number((s * Math.cos(rad)).toFixed(2)), y: Number((s * Math.sin(rad)).toFixed(2)) };
+        v2 = { x: Number((-s * Math.sin(rad)).toFixed(2)), y: Number((s * Math.cos(rad)).toFixed(2)) };
+      } else if (name === 'negative') {
+        v1 = { x: 1, y: 3 };
+        v2 = { x: 3, y: 1 };
+      } else if (name === 'collinear') {
+        v1 = { x: 2, y: 1.5 };
+        v2 = { x: 4, y: 3 };
+      }
+      syncInputs();
+      renderAll();
+    }
+
+    function syncInputs() {
+      document.getElementById('v1-x').value = v1.x;
+      document.getElementById('v1-y').value = v1.y;
+      document.getElementById('v2-x').value = v2.x;
+      document.getElementById('v2-y').value = v2.y;
+    }
+
+    function updateFromInputs() {
+      v1.x = parseFloat(document.getElementById('v1-x').value) || 0;
+      v1.y = parseFloat(document.getElementById('v1-y').value) || 0;
+      v2.x = parseFloat(document.getElementById('v2-x').value) || 0;
+      v2.y = parseFloat(document.getElementById('v2-y').value) || 0;
+      renderAll();
+    }
+
+    function toScreen(x, y) {
+      return {
+        x: origin.x + x * scale,
+        y: origin.y - y * scale
+      };
+    }
+
+    function toMath(sx, sy) {
+      return {
+        x: Number(((sx - origin.x) / scale).toFixed(2)),
+        y: Number(((origin.y - sy) / scale).toFixed(2))
+      };
+    }
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+
+      // Vertical lines
+      for (let x = origin.x % scale; x < canvas.width; x += scale) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      // Horizontal lines
+      for (let y = origin.y % scale; y < canvas.height; y += scale) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Main axes
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      // X axis
+      ctx.beginPath();
+      ctx.moveTo(0, origin.y);
+      ctx.lineTo(canvas.width, origin.y);
+      ctx.stroke();
+      // Y axis
+      ctx.beginPath();
+      ctx.moveTo(origin.x, 0);
+      ctx.lineTo(origin.x, canvas.height);
+      ctx.stroke();
+    }
+
+    function drawArrow(p1, p2, color, label) {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+
+      // Arrow head
+      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      const headLen = 12;
+      ctx.beginPath();
+      ctx.moveTo(p2.x, p2.y);
+      ctx.lineTo(p2.x - headLen * Math.cos(angle - Math.PI / 6), p2.y - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(p2.x - headLen * Math.cos(angle + Math.PI / 6), p2.y - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      // Handle circle
+      ctx.beginPath();
+      ctx.arc(p2.x, p2.y, 6, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Label
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(label, p2.x + 10 * Math.cos(angle), p2.y + 10 * Math.sin(angle));
+    }
+
+    function renderAll() {
+      drawGrid();
+
+      const p0 = toScreen(0, 0);
+      const pv1 = toScreen(v1.x, v1.y);
+      const pv2 = toScreen(v2.x, v2.y);
+      const psum = toScreen(v1.x + v2.x, v1.y + v2.y);
+
+      // Compute determinant
+      const det = v1.x * v2.y - v2.x * v1.y;
+      const area = Math.abs(det);
+
+      // Draw parallelogram
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(pv1.x, pv1.y);
+      ctx.lineTo(psum.x, psum.y);
+      ctx.lineTo(pv2.x, pv2.y);
+      ctx.closePath();
+
+      if (Math.abs(det) < 1e-4) {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.2)';
+        ctx.strokeStyle = '#94a3b8';
+      } else if (det > 0) {
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.25)';
+        ctx.strokeStyle = '#4ade80';
+      } else {
+        ctx.fillStyle = 'rgba(248, 113, 113, 0.25)';
+        ctx.strokeStyle = '#f87171';
+      }
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw vectors
+      drawArrow(p0, pv1, '#facc15', 'v₁');
+      drawArrow(p0, pv2, '#38bdf8', 'v₂');
+
+      // Update metrics
+      document.getElementById('det-val').textContent = det.toFixed(2);
+      document.getElementById('area-val').textContent = area.toFixed(2);
+
+      const orientEl = document.getElementById('orient-val');
+      const detEl = document.getElementById('det-val');
+      if (Math.abs(det) < 1e-4) {
+        detEl.style.color = '#94a3b8';
+        orientEl.style.color = '#94a3b8';
+        orientEl.textContent = 'Вырожденный (det = 0, коллинеарны)';
+      } else if (det > 0) {
+        detEl.style.color = '#4ade80';
+        orientEl.style.color = '#4ade80';
+        orientEl.textContent = 'Положительная (против часовой ↺)';
+      } else {
+        detEl.style.color = '#f87171';
+        orientEl.style.color = '#f87171';
+        orientEl.textContent = 'Отрицательная (по часовой ↻, отражение)';
+      }
+
+      solveCramer();
+    }
+
+    function solveCramer() {
+      bVec.x = parseFloat(document.getElementById('b-x').value) || 0;
+      bVec.y = parseFloat(document.getElementById('b-y').value) || 0;
+
+      const delta = v1.x * v2.y - v2.x * v1.y;
+      const deltaX = bVec.x * v2.y - v2.x * bVec.y;
+      const deltaY = v1.x * bVec.y - bVec.x * v1.y;
+
+      const panel = document.getElementById('cramer-output');
+
+      if (Math.abs(delta) < 1e-6) {
+        panel.innerHTML = `
+          &Delta; = 0. Матрица системы вырождена.<br>
+          ${Math.abs(deltaX) < 1e-6 && Math.abs(deltaY) < 1e-6 ? 
+            '<strong style="color: var(--gold);">Бесконечно много решений</strong> (прямые совпадают)' : 
+            '<strong style="color: var(--red);">Система несовместна</strong> (прямые параллельны)'}
+        `;
+      } else {
+        const x = deltaX / delta;
+        const y = deltaY / delta;
+        panel.innerHTML = `
+          &Delta; = |v₁ v₂| = <strong>${delta.toFixed(2)}</strong><br>
+          &Delta;<sub>x</sub> = |b v₂| = <strong>${deltaX.toFixed(2)}</strong><br>
+          &Delta;<sub>y</sub> = |v₁ b| = <strong>${deltaY.toFixed(2)}</strong><br>
+          <hr style="border-color: #334155; margin: 8px 0;">
+          <strong>Решение:</strong><br>
+          x = &Delta;<sub>x</sub> / &Delta; = ${deltaX.toFixed(2)} / ${delta.toFixed(2)} = <strong style="color: var(--gold);">${x.toFixed(3)}</strong><br>
+          y = &Delta;<sub>y</sub> / &Delta; = ${deltaY.toFixed(2)} / ${delta.toFixed(2)} = <strong style="color: var(--accent);">${y.toFixed(3)}</strong>
+        `;
+      }
+    }
+
+    // Dragging
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+
+      const pv1 = toScreen(v1.x, v1.y);
+      const pv2 = toScreen(v2.x, v2.y);
+
+      if (Math.hypot(pv1.x - sx, pv1.y - sy) <= 18) {
+        draggedVec = 'v1';
+      } else if (Math.hypot(pv2.x - sx, pv2.y - sy) <= 18) {
+        draggedVec = 'v2';
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (draggedVec) {
+        const rect = canvas.getBoundingClientRect();
+        const m = toMath(e.clientX - rect.left, e.clientY - rect.top);
+        if (draggedVec === 'v1') {
+          v1.x = m.x; v1.y = m.y;
+        } else {
+          v2.x = m.x; v2.y = m.y;
+        }
+        syncInputs();
+        renderAll();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      draggedVec = null;
+    });
+
+    // Init
+    syncInputs();
+    renderAll();
+  </script>
+</body>
+</html>
