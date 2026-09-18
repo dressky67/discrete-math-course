@@ -1,0 +1,698 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивная графовая лаборатория: BFS, DFS и Дейкстра | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --gold: #facc15;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 950px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    #graph-canvas {
+      width: 100%;
+      height: 480px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: crosshair;
+    }
+    .log-panel {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      max-height: 250px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+    .log-item {
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+    .log-item.highlight {
+      color: var(--gold);
+      font-weight: bold;
+    }
+    .step-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .info-bar {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #bae6fd;
+      font-size: 0.85rem;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Интерактивная графовая лаборатория</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 4: Обход графов, BFS, DFS и алгоритм Дейкстры</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Холст графа -->
+    <div class="card">
+      <div class="card-title">
+        <span>Интерактивный холст</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Клик по пустому месту — добавить вершину</span>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="loadPreset('dijkstra')">Предустановка Дейкстры</button>
+        <button onclick="loadPreset('bipartite')">Двудольный граф K3,3</button>
+        <button onclick="loadPreset('k5')">Полный граф K5</button>
+        <button onclick="loadPreset('tree')">Двоичное дерево</button>
+        <button onclick="clearGraph()">Очистить граф</button>
+      </div>
+
+      <canvas id="graph-canvas" width="650" height="480"></canvas>
+
+      <div class="info-bar">
+        <strong>Инструкция:</strong> Нажмите на две вершины подряд, чтобы соединить их ребром (или удалить ребро). Перетаскивайте вершины мышью для настройки удобного вида.
+      </div>
+    </div>
+
+    <!-- Правая колонка: Алгоритмы и шаги -->
+    <div class="card">
+      <div class="card-title">Выбор алгоритма</div>
+      <div class="btn-group">
+        <button id="btn-algo-bfs" onclick="setAlgorithm('bfs')">Поиск в ширину (BFS)</button>
+        <button id="btn-algo-dfs" onclick="setAlgorithm('dfs')">Поиск в глубину (DFS)</button>
+        <button id="btn-algo-dijkstra" class="active" onclick="setAlgorithm('dijkstra')">Алгоритм Дейкстры</button>
+        <button id="btn-algo-bipartite" onclick="setAlgorithm('bipartite')">Проверка 2-раскраски</button>
+      </div>
+
+      <div class="step-controls">
+        <button onclick="startAlgorithm()" style="background: var(--accent); color: #0f172a; font-weight: 700;">Старт / Перезапуск</button>
+        <button onclick="stepAlgorithm()">Сделать шаг &rarr;</button>
+        <button onclick="autoPlay()">Автовоспроизведение</button>
+      </div>
+
+      <div class="card-title" style="margin-top: 16px; font-size: 1.05rem;">
+        Журнал работы алгоритма
+      </div>
+      <div class="log-panel" id="log-panel">
+        Выберите алгоритм и нажмите «Старт».
+      </div>
+
+      <div class="info-bar" id="algo-summary" style="margin-top: 16px;">
+        <strong>Алгоритм Дейкстры:</strong> находит кратчайшие пути от вершины 1 ко всем остальным вершинам графа.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('graph-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let nodes = [];
+    let edges = [];
+    let selectedNode = null;
+    let draggedNode = null;
+
+    let currentAlgo = 'dijkstra';
+    let algoState = null;
+    let autoInterval = null;
+
+    // Node: { id, x, y, label }
+    // Edge: { u, v, weight }
+
+    function setAlgorithm(algo) {
+      currentAlgo = algo;
+      ['bfs', 'dfs', 'dijkstra', 'bipartite'].forEach(a => {
+        document.getElementById(`btn-algo-${a}`).classList.toggle('active', a === algo);
+      });
+      stopAuto();
+      resetAlgoVisuals();
+      log(`Выбран алгоритм: ${algo.toUpperCase()}`);
+    }
+
+    function resetAlgoVisuals() {
+      algoState = null;
+      nodes.forEach(n => { n.color = null; n.dist = null; n.visited = false; });
+      edges.forEach(e => { e.highlight = false; });
+      draw();
+    }
+
+    function loadPreset(name) {
+      stopAuto();
+      nodes = [];
+      edges = [];
+      if (name === 'dijkstra') {
+        nodes = [
+          { id: 0, x: 80, y: 240, label: 'A' },
+          { id: 1, x: 220, y: 130, label: 'B' },
+          { id: 2, x: 220, y: 350, label: 'C' },
+          { id: 3, x: 380, y: 130, label: 'D' },
+          { id: 4, x: 380, y: 350, label: 'E' },
+          { id: 5, x: 540, y: 240, label: 'Z' }
+        ];
+        edges = [
+          { u: 0, v: 1, weight: 4 },
+          { u: 0, v: 2, weight: 2 },
+          { u: 1, v: 2, weight: 1 },
+          { u: 1, v: 3, weight: 5 },
+          { u: 2, v: 3, weight: 8 },
+          { u: 2, v: 4, weight: 10 },
+          { u: 3, v: 4, weight: 2 },
+          { u: 3, v: 5, weight: 6 },
+          { u: 4, v: 5, weight: 3 }
+        ];
+      } else if (name === 'bipartite') {
+        nodes = [
+          { id: 0, x: 180, y: 120, label: 'L1' },
+          { id: 1, x: 180, y: 240, label: 'L2' },
+          { id: 2, x: 180, y: 360, label: 'L3' },
+          { id: 3, x: 440, y: 120, label: 'R1' },
+          { id: 4, x: 440, y: 240, label: 'R2' },
+          { id: 5, x: 440, y: 360, label: 'R3' }
+        ];
+        edges = [];
+        for (let l = 0; l < 3; l++) {
+          for (let r = 3; r < 6; r++) {
+            edges.push({ u: l, v: r, weight: 1 });
+          }
+        }
+      } else if (name === 'k5') {
+        nodes = [];
+        const cx = 310, cy = 240, r = 160;
+        for (let i = 0; i < 5; i++) {
+          const angle = (2 * Math.PI * i / 5) - Math.PI / 2;
+          nodes.push({ id: i, x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), label: `${i + 1}` });
+        }
+        edges = [];
+        for (let i = 0; i < 5; i++) {
+          for (let j = i + 1; j < 5; j++) {
+            edges.push({ u: i, v: j, weight: 1 });
+          }
+        }
+      } else if (name === 'tree') {
+        nodes = [
+          { id: 0, x: 310, y: 80, label: '1' },
+          { id: 1, x: 180, y: 200, label: '2' },
+          { id: 2, x: 440, y: 200, label: '3' },
+          { id: 3, x: 110, y: 340, label: '4' },
+          { id: 4, x: 250, y: 340, label: '5' },
+          { id: 5, x: 380, y: 340, label: '6' },
+          { id: 6, x: 510, y: 340, label: '7' }
+        ];
+        edges = [
+          { u: 0, v: 1, weight: 1 }, { u: 0, v: 2, weight: 1 },
+          { u: 1, v: 3, weight: 1 }, { u: 1, v: 4, weight: 1 },
+          { u: 2, v: 5, weight: 1 }, { u: 2, v: 6, weight: 1 }
+        ];
+      }
+      resetAlgoVisuals();
+      log(`Загружен пресет: ${name}`);
+    }
+
+    function clearGraph() {
+      stopAuto();
+      nodes = [];
+      edges = [];
+      resetAlgoVisuals();
+      log("Граф очищен.");
+    }
+
+    function log(msg, highlight = false) {
+      const panel = document.getElementById('log-panel');
+      const div = document.createElement('div');
+      div.className = 'log-item' + (highlight ? ' highlight' : '');
+      div.textContent = msg;
+      panel.appendChild(div);
+      panel.scrollTop = panel.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('log-panel').innerHTML = '';
+    }
+
+    // Canvas interactions
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const clickedNode = nodes.find(n => Math.hypot(n.x - x, n.y - y) <= 22);
+
+      if (clickedNode) {
+        draggedNode = clickedNode;
+        if (!selectedNode) {
+          selectedNode = clickedNode;
+        } else if (selectedNode === clickedNode) {
+          selectedNode = null;
+        } else {
+          // Toggle edge
+          const existingIdx = edges.findIndex(ed => (ed.u === selectedNode.id && ed.v === clickedNode.id) || (ed.u === clickedNode.id && ed.v === selectedNode.id));
+          if (existingIdx >= 0) {
+            edges.splice(existingIdx, 1);
+            log(`Удалено ребро (${selectedNode.label}, ${clickedNode.label})`);
+          } else {
+            const w = Math.floor(Math.random() * 8) + 1;
+            edges.push({ u: selectedNode.id, v: clickedNode.id, weight: w });
+            log(`Добавлено ребро (${selectedNode.label}, ${clickedNode.label}) с весом ${w}`);
+          }
+          selectedNode = null;
+          draw();
+        }
+      } else {
+        // Create new node
+        const newId = nodes.length > 0 ? Math.max(...nodes.map(n => n.id)) + 1 : 0;
+        nodes.push({ id: newId, x, y, label: `${newId + 1}` });
+        selectedNode = null;
+        log(`Создана вершина ${newId + 1}`);
+        draw();
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (draggedNode) {
+        const rect = canvas.getBoundingClientRect();
+        draggedNode.x = Math.max(25, Math.min(canvas.width - 25, e.clientX - rect.left));
+        draggedNode.y = Math.max(25, Math.min(canvas.height - 25, e.clientY - rect.top));
+        draw();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      draggedNode = null;
+    });
+
+    // Rendering
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw edges
+      edges.forEach(e => {
+        const u = nodes.find(n => n.id === e.u);
+        const v = nodes.find(n => n.id === e.v);
+        if (!u || !v) return;
+
+        ctx.beginPath();
+        ctx.moveTo(u.x, u.y);
+        ctx.lineTo(v.x, v.y);
+        ctx.lineWidth = e.highlight ? 4 : 2;
+        ctx.strokeStyle = e.highlight ? '#facc15' : '#475569';
+        ctx.stroke();
+
+        // Draw weight
+        const mx = (u.x + v.x) / 2;
+        const my = (u.y + v.y) / 2;
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(mx - 10, my - 10, 20, 18);
+        ctx.fillStyle = e.highlight ? '#facc15' : '#94a3b8';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(e.weight, mx, my);
+      });
+
+      // Draw nodes
+      nodes.forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 20, 0, 2 * Math.PI);
+        ctx.fillStyle = n.color || (n.visited ? '#0284c7' : '#1e293b');
+        ctx.fill();
+        ctx.lineWidth = (selectedNode === n) ? 3 : 2;
+        ctx.strokeStyle = (selectedNode === n) ? '#facc15' : '#38bdf8';
+        ctx.stroke();
+
+        // Text label
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(n.label, n.x, n.y - (n.dist !== null && n.dist !== undefined ? 4 : 0));
+
+        if (n.dist !== null && n.dist !== undefined) {
+          ctx.fillStyle = '#facc15';
+          ctx.font = '10px monospace';
+          ctx.fillText(n.dist === Infinity ? '∞' : `d=${n.dist}`, n.x, n.y + 10);
+        }
+      });
+    }
+
+    // Algorithms implementation
+    function startAlgorithm() {
+      stopAuto();
+      clearLog();
+      resetAlgoVisuals();
+      if (nodes.length === 0) {
+        log("Граф пуст! Добавьте вершины или загрузите пресет.");
+        return;
+      }
+
+      if (currentAlgo === 'dijkstra') {
+        const dist = {};
+        const prev = {};
+        const unvisited = new Set();
+        nodes.forEach(n => {
+          dist[n.id] = Infinity;
+          prev[n.id] = null;
+          n.dist = Infinity;
+          unvisited.add(n.id);
+        });
+        const startId = nodes[0].id;
+        dist[startId] = 0;
+        nodes[0].dist = 0;
+
+        algoState = {
+          type: 'dijkstra',
+          dist, prev, unvisited,
+          current: null,
+          done: false
+        };
+        log(`Старт Дейкстры из вершины ${nodes[0].label}. Все расстояния инициализированы в ∞.`, true);
+      } else if (currentAlgo === 'bfs') {
+        const startId = nodes[0].id;
+        algoState = {
+          type: 'bfs',
+          queue: [startId],
+          visited: new Set([startId]),
+          done: false
+        };
+        nodes[0].visited = true;
+        nodes[0].color = '#0284c7';
+        log(`Старт BFS. В очередь помещена вершина ${nodes[0].label}.`, true);
+      } else if (currentAlgo === 'dfs') {
+        const startId = nodes[0].id;
+        algoState = {
+          type: 'dfs',
+          stack: [startId],
+          visited: new Set(),
+          done: false
+        };
+        log(`Старт DFS. В стек помещена вершина ${nodes[0].label}.`, true);
+      } else if (currentAlgo === 'bipartite') {
+        const colors = {};
+        algoState = {
+          type: 'bipartite',
+          queue: [nodes[0].id],
+          colors: { [nodes[0].id]: 1 },
+          visited: new Set([nodes[0].id]),
+          done: false,
+          isBipartite: true
+        };
+        nodes[0].color = '#22c55e';
+        log(`Проверка двудольности. Вершина ${nodes[0].label} окрашена в зеленый цвет.`, true);
+      }
+      draw();
+    }
+
+    function stepAlgorithm() {
+      if (!algoState || algoState.done) {
+        log("Алгоритм завершен.");
+        stopAuto();
+        return;
+      }
+
+      if (algoState.type === 'dijkstra') {
+        stepDijkstra();
+      } else if (algoState.type === 'bfs') {
+        stepBFS();
+      } else if (algoState.type === 'dfs') {
+        stepDFS();
+      } else if (algoState.type === 'bipartite') {
+        stepBipartite();
+      }
+      draw();
+    }
+
+    function stepDijkstra() {
+      const { dist, prev, unvisited } = algoState;
+      if (unvisited.size === 0) {
+        algoState.done = true;
+        log("Все вершины посещены. Кратчайшие расстояния найдены!", true);
+        highlightDijkstraPath();
+        return;
+      }
+
+      // Find min unvisited
+      let minNode = null;
+      let minDist = Infinity;
+      unvisited.forEach(id => {
+        if (dist[id] < minDist) {
+          minDist = dist[id];
+          minNode = id;
+        }
+      });
+
+      if (minNode === null || minDist === Infinity) {
+        algoState.done = true;
+        log("Оставшиеся вершины недостижимы из источника.");
+        return;
+      }
+
+      unvisited.delete(minNode);
+      const uNode = nodes.find(n => n.id === minNode);
+      uNode.visited = true;
+      uNode.color = '#0284c7';
+      log(`Фиксируем вершину ${uNode.label} с минимальным расстоянием d=${minDist}`, true);
+
+      // Relax edges
+      edges.forEach(e => {
+        let v = null;
+        if (e.u === minNode) v = e.v;
+        else if (e.v === minNode) v = e.u;
+
+        if (v !== null && unvisited.has(v)) {
+          const vNode = nodes.find(n => n.id === v);
+          if (dist[minNode] + e.weight < dist[v]) {
+            dist[v] = dist[minNode] + e.weight;
+            prev[v] = minNode;
+            vNode.dist = dist[v];
+            e.highlight = true;
+            log(`  Релаксация: путь к ${vNode.label} через ${uNode.label} уменьшен до ${dist[v]}`);
+          }
+        }
+      });
+    }
+
+    function highlightDijkstraPath() {
+      // Highlight path to last node
+      const targetId = nodes[nodes.length - 1].id;
+      let curr = targetId;
+      while (algoState.prev[curr] !== null && algoState.prev[curr] !== undefined) {
+        const p = algoState.prev[curr];
+        const edge = edges.find(e => (e.u === curr && e.v === p) || (e.u === p && e.v === curr));
+        if (edge) edge.highlight = true;
+        curr = p;
+      }
+    }
+
+    function stepBFS() {
+      const { queue, visited } = algoState;
+      if (queue.length === 0) {
+        algoState.done = true;
+        log("Очередь пуста. Обход BFS завершен.", true);
+        return;
+      }
+
+      const curr = queue.shift();
+      const currNode = nodes.find(n => n.id === curr);
+      currNode.color = '#0284c7';
+      log(`Извлечена вершина ${currNode.label} из очереди`);
+
+      edges.forEach(e => {
+        let next = null;
+        if (e.u === curr) next = e.v;
+        else if (e.v === curr) next = e.u;
+
+        if (next !== null && !visited.has(next)) {
+          visited.add(next);
+          queue.push(next);
+          const nextNode = nodes.find(n => n.id === next);
+          nextNode.visited = true;
+          nextNode.color = '#38bdf8';
+          e.highlight = true;
+          log(`  Обнаружен сосед ${nextNode.label}, добавлен в очередь`);
+        }
+      });
+    }
+
+    function stepDFS() {
+      const { stack, visited } = algoState;
+      if (stack.length === 0) {
+        algoState.done = true;
+        log("Стек пуст. Обход DFS завершен.", true);
+        return;
+      }
+
+      const curr = stack.pop();
+      if (visited.has(curr)) return;
+      visited.add(curr);
+
+      const currNode = nodes.find(n => n.id === curr);
+      currNode.color = '#c084fc';
+      currNode.visited = true;
+      log(`Посещена вершина ${currNode.label}`);
+
+      edges.forEach(e => {
+        let next = null;
+        if (e.u === curr) next = e.v;
+        else if (e.v === curr) next = e.u;
+
+        if (next !== null && !visited.has(next)) {
+          stack.push(next);
+          e.highlight = true;
+        }
+      });
+    }
+
+    function stepBipartite() {
+      const { queue, colors, visited } = algoState;
+      if (queue.length === 0) {
+        algoState.done = true;
+        log("Все компоненты успешно раскрашены в 2 цвета! Граф двудольный.", true);
+        return;
+      }
+
+      const curr = queue.shift();
+      const currColor = colors[curr];
+      const nextColor = (currColor === 1) ? 2 : 1;
+
+      edges.forEach(e => {
+        let next = null;
+        if (e.u === curr) next = e.v;
+        else if (e.v === curr) next = e.u;
+
+        if (next !== null) {
+          if (!visited.has(next)) {
+            visited.add(next);
+            colors[next] = nextColor;
+            queue.push(next);
+            const nNode = nodes.find(n => n.id === next);
+            nNode.color = (nextColor === 1) ? '#22c55e' : '#ec4899';
+            log(`Вершина ${nNode.label} окрашена в ${nextColor === 1 ? 'зеленый' : 'розовый'}`);
+          } else if (colors[next] === currColor) {
+            algoState.done = true;
+            algoState.isBipartite = false;
+            e.highlight = true;
+            log(`Конфликт! Вершины ${nodes.find(n=>n.id===curr).label} и ${nodes.find(n=>n.id===next).label} имеют одинаковый цвет. Найден нечетный цикл! Граф НЕ двудольный.`, true);
+          }
+        }
+      });
+    }
+
+    function autoPlay() {
+      if (autoInterval) {
+        stopAuto();
+      } else {
+        if (!algoState || algoState.done) startAlgorithm();
+        autoInterval = setInterval(() => {
+          if (!algoState || algoState.done) {
+            stopAuto();
+          } else {
+            stepAlgorithm();
+          }
+        }, 600);
+      }
+    }
+
+    function stopAuto() {
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+      }
+    }
+
+    // Init
+    loadPreset('dijkstra');
+    draw();
+  </script>
+</body>
+</html>
