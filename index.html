@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Дискретная математика и матрицы | Полный курс</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151c2d;
+      --card-hover: #1c263c;
+      --border: #243048;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-grad: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding-bottom: 60px;
+    }
+    .hero {
+      background: radial-gradient(circle at 50% -20%, rgba(56, 189, 248, 0.18), transparent 70%),
+                  radial-gradient(circle at 80% 20%, rgba(129, 140, 248, 0.12), transparent 50%);
+      padding: 60px 20px 40px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      max-width: 820px;
+      margin: 0 auto 24px;
+      font-size: 1.15rem;
+      color: var(--text-muted);
+    }
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0b0f19;
+    }
+    .btn-primary:hover {
+      opacity: 0.92;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -5px rgba(56, 189, 248, 0.4);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      padding: 0 20px;
+    }
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .chapter-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .chapter-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(56, 189, 248, 0.4);
+      background: var(--card-hover);
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+    .ch-num {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .ch-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.35;
+    }
+    .ch-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      flex-grow: 1;
+    }
+    .ch-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .tag {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .card-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-card {
+      flex: 1;
+      text-align: center;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-viz {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .btn-viz:hover {
+      background: var(--accent);
+      color: #0b0f19;
+    }
+    .btn-theory {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-theory:hover {
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+    footer {
+      max-width: 1200px;
+      margin: 60px auto 0;
+      padding: 24px 20px 0;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="hero-badge">Полный открытый интерактивный курс</div>
+    <h1>Дискретная математика и основы матриц</h1>
+    <p>
+      Фундаментальный академический курс на русском языке для самостоятельного изучения с нуля до олимпиадного и прикладного инженерного уровня. Включает строгую теорию, разобранные примеры, сборники задач с решениями и интерактивные визуализации.
+    </p>
+    <div class="cta-group">
+      <a href="discrete_math_course.pdf" class="btn btn-primary" download>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Скачать PDF-учебник
+      </a>
+      <a href="https://github.com/dressky67/discrete-math-course" class="btn btn-outline" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub Репозиторий
+      </a>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num">9</div>
+        <div class="stat-label">Глав курса</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">9</div>
+        <div class="stat-label">Интерактивных лабораторий</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">90+</div>
+        <div class="stat-label">Задач с решениями</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Открытый доступ</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2 class="section-title">Программа курса и интерактивные лаборатории</h2>
+
+    <div class="grid">
+      <!-- Chapter 1 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 1</div>
+          <h3 class="ch-title">Введение в логику и теорию множеств</h3>
+          <p class="ch-desc">
+            Высказывания, таблицы истинности, булевы связки, кванторы. Множества, парадокс Рассела, декартово произведение, разбиения и формулы де Моргана.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Диаграммы Эйлера-Венна</span>
+            <span class="tag">Таблицы истинности</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/01_sets_venn.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch01_logic_sets.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 2 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 2</div>
+          <h3 class="ch-title">Отношения и функции</h3>
+          <p class="ch-desc">
+            Бинарные отношения, матричное представление, ориентированные графы. Рефлексивность, симметрия, транзитивность. Отношения эквивалентности и фактор-множества. Частичный порядок и диаграммы Хассе. Инъекция, сюръекция, биекция.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Матрица отношений</span>
+            <span class="tag">Алгоритм Уоршелла</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/02_relations_properties.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch02_relations_functions.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 3 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 3</div>
+          <h3 class="ch-title">Комбинаторика</h3>
+          <p class="ch-desc">
+            Правила суммы и произведения. Размещения, перестановки, сочетания с повторениями и без. Бином Ньютона, треугольник Паскаля. Формула включений-исключений, беспорядки и принцип Дирихле.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Треугольник Паскаля</span>
+            <span class="tag">Фрактал Серпинского</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/03_combinatorics_explorer.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch03_combinatorics.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 4 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 4</div>
+          <h3 class="ch-title">Теория графов</h3>
+          <p class="ch-desc">
+            Графы и орграфы, степени вершин, лемма о рукопожатиях. Матрицы смежности и инцидентности. Деревья и остовы. Эйлеровы и гамильтоновы циклы, планарность (формула Эйлера), раскраска и хроматическое число. Алгоритмы BFS, DFS, Дейкстры.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Canvas Граф-редактор</span>
+            <span class="tag">BFS / Дейкстра</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/04_graph_algorithms.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch04_graphs.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 5 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 5</div>
+          <h3 class="ch-title">Матрицы и матричные операции</h3>
+          <p class="ch-desc">
+            Определение матриц, сложение, скалярное умножение, матричное умножение (некоммутативность, ассоциативность). Транспонирование. Элементарные преобразования строк, ступенчатый вид (REF/RREF). Метод Гаусса, ранг матрицы и обратные матрицы.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Строка-на-столбец аниматор</span>
+            <span class="tag">Гаусс-Жордан</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/05_matrix_operations.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch05_matrices.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 6 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 6</div>
+          <h3 class="ch-title">Определители и системы линейных уравнений</h3>
+          <p class="ch-desc">
+            Определитель матрицы 2x2, 3x3 и nxn (разложение Лапласа по строке/столбцу). Геометрический смысл (ориентированный объем). Теорема Кронекера-Капелли, правило Крамера и фундаментальная система решений (ФСР).
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Геометрия детерминанта</span>
+            <span class="tag">Метод Крамера</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/06_determinant_area.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch06_determinants_systems.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 7 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 7</div>
+          <h3 class="ch-title">Собственные значения и диагонализация</h3>
+          <p class="ch-desc">
+            Собственные значения и собственные векторы. Характеристический многочлен. Алгебраическая и геометрическая кратность. Условия диагонализуемости (A = P D P⁻¹). Симметричные матрицы и спектральная теорема.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Трансформация 2D плоскости</span>
+            <span class="tag">Инвариантные прямые</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/07_eigenvalues_transformation.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch07_eigenvalues.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 8 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 8</div>
+          <h3 class="ch-title">Приложения: графы, марковские цепи и графика</h3>
+          <p class="ch-desc">
+            Число путей как степени матрицы смежности. Матричная теорема о деревьях Кирхгофа и спектр лапласиана. Цепи Маркова, стохастические матрицы, стационарное распределение и алгоритм Google PageRank. Компьютерная графика: аффинные и проективные преобразования в однородных координатах.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Марковские блуждания</span>
+            <span class="tag">PageRank & Сходимость</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/08_markov_chains.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch08_applications.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+
+      <!-- Chapter 9 -->
+      <div class="chapter-card">
+        <div>
+          <div class="ch-num">Глава 9</div>
+          <h3 class="ch-title">Булевы функции, минимизация и криптография</h3>
+          <p class="ch-desc">
+            Булевы функции, СДНФ, СКНФ, полиномы Жегалкина. Минимизация по картам Карно. Функциональная полнота и теорема Поста (T₀, T₁, S, M, L). Базис Шеффера. Элементы теории чисел: расширенный алгоритм Евклида, соотношение Безу, функция Эйлера, Малая теорема Ферма, Китайская теорема об остатках и асимметричная криптосистема RSA.
+          </p>
+          <div class="ch-meta">
+            <span class="tag">Карты Карно</span>
+            <span class="tag">Синтез RSA</span>
+            <span class="tag">10 задач</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <a href="viz/09_boolean_circuits.html" class="btn-card btn-viz" target="_blank">Интерактив ↗</a>
+          <a href="https://github.com/dressky67/discrete-math-course/blob/main/content/ch09_boolean_numtheory.md" class="btn-card btn-theory" target="_blank">Теория</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div>
+      © 2026 <strong>Дискретная математика и основы матриц</strong>. Открытый учебно-методический комплекс.
+    </div>
+    <div>
+      Хостинг на <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a> • Исходный код на <a href="https://github.com/dressky67/discrete-math-course" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </footer>
+
+</body>
+</html>
