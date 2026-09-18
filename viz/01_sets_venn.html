@@ -1,0 +1,568 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивные диаграммы Эйлера-Венна | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --circle-a: rgba(239, 68, 68, 0.45);
+      --circle-b: rgba(59, 130, 246, 0.45);
+      --circle-c: rgba(34, 197, 94, 0.45);
+      --highlight: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: #090d16;
+      border: 1px solid var(--border);
+    }
+    .region {
+      cursor: pointer;
+      transition: fill 0.2s ease, opacity 0.2s ease;
+    }
+    .region:hover {
+      filter: brightness(1.25);
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+    }
+    button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    .input-row {
+      margin-bottom: 16px;
+    }
+    .input-row label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: monospace;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .truth-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .truth-table th, .truth-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+    }
+    .truth-table th {
+      background: #0f172a;
+      color: var(--text-muted);
+    }
+    .truth-table tr.active-row {
+      background: rgba(56, 189, 248, 0.18);
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #334155;
+      color: var(--text);
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+    .formula-display {
+      background: #090d16;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 1rem;
+      color: #facc15;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Интерактивные диаграммы Эйлера-Венна</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 1: Множества и логические операции</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Диаграмма -->
+    <div class="card">
+      <div class="card-title">
+        <span>Графическое представление</span>
+        <div class="btn-group" style="margin-bottom: 0;">
+          <button id="mode-2" onclick="setSetsMode(2)">2 Множества</button>
+          <button id="mode-3" class="active" onclick="setSetsMode(3)">3 Множества</button>
+        </div>
+      </div>
+
+      <div class="formula-display" id="current-formula">
+        Выражение: Все области сброшены
+      </div>
+
+      <div class="canvas-container">
+        <svg id="venn-svg" viewBox="0 0 500 450" width="500" height="450"></svg>
+        <div class="legend" id="legend-box"></div>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; text-align: center;">
+        Нажимайте на любые секторы диаграммы или фон (универсум U), чтобы вручную включать и исключать области.
+      </p>
+    </div>
+
+    <!-- Правая колонка: Управление и Таблица -->
+    <div class="card">
+      <div class="card-title">Быстрые операции и формулы</div>
+
+      <div class="btn-group" id="preset-buttons"></div>
+
+      <div class="input-row">
+        <label for="expr-input">Пользовательское логическое выражение (A, B, C, and, or, not, xor):</label>
+        <input type="text" id="expr-input" placeholder="Например: (A or B) and not C" oninput="evalCustomExpr()">
+      </div>
+
+      <div class="card-title" style="margin-top: 24px; font-size: 1.05rem;">
+        Таблица принадлежности (Минтермы)
+        <button onclick="clearAll()" style="padding: 4px 10px; font-size: 0.8rem;">Сбросить</button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="truth-table" id="truth-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let numSets = 3;
+    // activeMask: 8-bit number (bit index = A*4 + B*2 + C*1)
+    let activeMask = 0;
+
+    function setSetsMode(n) {
+      numSets = n;
+      document.getElementById('mode-2').classList.toggle('active', n === 2);
+      document.getElementById('mode-3').classList.toggle('active', n === 3);
+      buildPresets();
+      drawVenn();
+      updateTable();
+    }
+
+    function toggleRegion(val) {
+      activeMask ^= (1 << val);
+      document.getElementById('current-formula').textContent = "Ручной выбор областей";
+      drawVenn();
+      updateTable();
+    }
+
+    function clearAll() {
+      activeMask = 0;
+      document.getElementById('current-formula').textContent = "Пустое множество (∅)";
+      document.getElementById('expr-input').value = "";
+      drawVenn();
+      updateTable();
+    }
+
+    function setPreset(name, mask) {
+      activeMask = mask;
+      document.getElementById('current-formula').textContent = "Выражение: " + name;
+      drawVenn();
+      updateTable();
+    }
+
+    function buildPresets() {
+      const container = document.getElementById('preset-buttons');
+      container.innerHTML = "";
+
+      let presets = [];
+      if (numSets === 2) {
+        presets = [
+          { name: "A ∪ B", fn: (a, b) => a || b },
+          { name: "A ∩ B", fn: (a, b) => a && b },
+          { name: "A \\ B", fn: (a, b) => a && !b },
+          { name: "B \\ A", fn: (a, b) => !a && b },
+          { name: "A △ B", fn: (a, b) => (a ? 1 : 0) ^ (b ? 1 : 0) },
+          { name: "A̅ (NOT A)", fn: (a, b) => !a },
+          { name: "NOT (A ∪ B)", fn: (a, b) => !(a || b) },
+          { name: "Универсум U", fn: () => true }
+        ];
+      } else {
+        presets = [
+          { name: "A ∪ B ∪ C", fn: (a, b, c) => a || b || c },
+          { name: "A ∩ B ∩ C", fn: (a, b, c) => a && b && c },
+          { name: "(A ∩ B) ∪ C", fn: (a, b, c) => (a && b) || c },
+          { name: "A \\ (B ∪ C)", fn: (a, b, c) => a && !(b || c) },
+          { name: "(A ∪ B) \\ C", fn: (a, b, c) => (a || b) && !c },
+          { name: "(A △ B) △ C", fn: (a, b, c) => ((a?1:0) ^ (b?1:0) ^ (c?1:0)) === 1 },
+          { name: "(A ∩ B) \\ C", fn: (a, b, c) => a && b && !c },
+          { name: "NOT (A ∪ B ∪ C)", fn: (a, b, c) => !(a || b || c) },
+          { name: "Универсум U", fn: () => true }
+        ];
+      }
+
+      presets.forEach(p => {
+        let mask = 0;
+        const total = (numSets === 2) ? 4 : 8;
+        for (let i = 0; i < total; i++) {
+          const a = !!(i & (numSets === 2 ? 2 : 4));
+          const b = !!(i & (numSets === 2 ? 1 : 2));
+          const c = (numSets === 3) ? !!(i & 1) : false;
+          if (p.fn(a, b, c)) mask |= (1 << i);
+        }
+        const btn = document.createElement('button');
+        btn.textContent = p.name;
+        btn.onclick = () => setPreset(p.name, mask);
+        container.appendChild(btn);
+      });
+    }
+
+    function evalCustomExpr() {
+      const expr = document.getElementById('expr-input').value.trim();
+      if (!expr) return;
+      try {
+        let jsExpr = expr
+          .replace(/\bAND\b/gi, '&&')
+          .replace(/\bOR\b/gi, '||')
+          .replace(/\bNOT\b/gi, '!')
+          .replace(/\bXOR\b/gi, '^')
+          .replace(/∩/g, '&&')
+          .replace(/∪/g, '||')
+          .replace(/\\/g, ' && !');
+
+        let mask = 0;
+        const total = (numSets === 2) ? 4 : 8;
+        for (let i = 0; i < total; i++) {
+          const a = !!(i & (numSets === 2 ? 2 : 4));
+          const b = !!(i & (numSets === 2 ? 1 : 2));
+          const c = (numSets === 3) ? !!(i & 1) : false;
+          
+          const fn = new Function('A', 'B', 'C', `return Boolean(${jsExpr});`);
+          if (fn(a, b, c)) mask |= (1 << i);
+        }
+        activeMask = mask;
+        document.getElementById('current-formula').textContent = "Выражение: " + expr;
+        drawVenn();
+        updateTable();
+      } catch (e) {
+        // Ошибка в выражении во время ввода
+      }
+    }
+
+    function drawVenn() {
+      const svg = document.getElementById('venn-svg');
+      svg.innerHTML = '';
+
+      // Universe background
+      const uActive = (activeMask & 1) !== 0;
+      const uRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      uRect.setAttribute('x', '10');
+      uRect.setAttribute('y', '10');
+      uRect.setAttribute('width', '480');
+      uRect.setAttribute('height', '430');
+      uRect.setAttribute('rx', '8');
+      uRect.setAttribute('fill', uActive ? 'rgba(56, 189, 248, 0.25)' : '#0f172a');
+      uRect.setAttribute('stroke', '#334155');
+      uRect.setAttribute('stroke-width', '2');
+      uRect.classList.add('region');
+      uRect.onclick = () => toggleRegion(0);
+      svg.appendChild(uRect);
+
+      // Label U
+      const uText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      uText.setAttribute('x', '30');
+      uText.setAttribute('y', '38');
+      uText.setAttribute('fill', '#94a3b8');
+      uText.setAttribute('font-weight', 'bold');
+      uText.setAttribute('font-size', '18');
+      uText.textContent = 'U (Универсум)';
+      svg.appendChild(uText);
+
+      if (numSets === 2) {
+        draw2Sets(svg);
+      } else {
+        draw3Sets(svg);
+      }
+    }
+
+    function draw2Sets(svg) {
+      // Circle A: center (190, 220), r=110
+      // Circle B: center (310, 220), r=110
+      const cA = { x: 190, y: 220, r: 110 };
+      const cB = { x: 310, y: 220, r: 110 };
+
+      // Regions:
+      // index 0: outside (handled by U)
+      // index 1: only B (A=0, B=1)
+      // index 2: only A (A=1, B=0)
+      // index 3: A and B (A=1, B=1)
+
+      const dOnlyA = "M 250,128.5 A 110,110 0 1,0 250,311.5 A 110,110 0 0,1 250,128.5 Z";
+      const dOnlyB = "M 250,128.5 A 110,110 0 0,1 250,311.5 A 110,110 0 1,0 250,128.5 Z";
+      const dIntersection = "M 250,128.5 A 110,110 0 0,1 250,311.5 A 110,110 0 0,1 250,128.5 Z";
+
+      createPath(svg, dOnlyA, (activeMask & 4) !== 0 ? '#ef4444' : '#1e293b', () => toggleRegion(2), "Только A");
+      createPath(svg, dOnlyB, (activeMask & 2) !== 0 ? '#3b82f6' : '#1e293b', () => toggleRegion(1), "Только B");
+      createPath(svg, dIntersection, (activeMask & 8) !== 0 ? '#a855f7' : '#1e293b', () => toggleRegion(3), "A ∩ B");
+
+      // Draw outlines
+      drawCircleOutline(svg, cA.x, cA.y, cA.r, '#ef4444', 'A', 130, 150);
+      drawCircleOutline(svg, cB.x, cB.y, cB.r, '#3b82f6', 'B', 370, 150);
+
+      document.getElementById('legend-box').innerHTML = `
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div> Множество A</div>
+        <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div> Множество B</div>
+      `;
+    }
+
+    function draw3Sets(svg) {
+      // 3 Circles:
+      // A (Top): (250, 180), r=105
+      // B (Bottom-Left): (190, 265), r=105
+      // C (Bottom-Right): (310, 265), r=105
+      const cA = { x: 250, y: 180, r: 105 };
+      const cB = { x: 190, y: 265, r: 105 };
+      const cC = { x: 310, y: 265, r: 105 };
+
+      // We generate pixel/composite path regions using 8 minterms:
+      // i = 0 (none), 1 (C only), 2 (B only), 3 (B&C only), 4 (A only), 5 (A&C only), 6 (A&B only), 7 (all three)
+      const colors = {
+        1: '#22c55e', // C
+        2: '#3b82f6', // B
+        3: '#06b6d4', // B&C
+        4: '#ef4444', // A
+        5: '#eab308', // A&C
+        6: '#f97316', // A&B
+        7: '#ec4899'  // A&B&C
+      };
+
+      // Base circles filled with low opacity, outlines on top
+      // For interactive precise clicking, we render paths
+      // Simplified SVG path approximations for the 7 circular intersection pieces:
+      // Center (7):
+      const d7 = "M 250,230 A 105,105 0 0,0 215,250 A 105,105 0 0,0 285,250 A 105,105 0 0,0 250,230 Z";
+      createPath(svg, d7, (activeMask & (1<<7)) ? colors[7] : '#1e293b', () => toggleRegion(7), "A ∩ B ∩ C");
+
+      // A only (4):
+      const d4 = "M 175,120 A 105,105 0 0,1 325,120 A 105,105 0 0,0 250,230 A 105,105 0 0,0 175,120 Z";
+      createPath(svg, d4, (activeMask & (1<<4)) ? colors[4] : '#1e293b', () => toggleRegion(4), "Только A");
+
+      // B only (2):
+      const d2 = "M 100,290 A 105,105 0 0,1 175,120 A 105,105 0 0,0 215,250 A 105,105 0 0,0 100,290 Z";
+      createPath(svg, d2, (activeMask & (1<<2)) ? colors[2] : '#1e293b', () => toggleRegion(2), "Только B");
+
+      // C only (1):
+      const d1 = "M 400,290 A 105,105 0 0,0 325,120 A 105,105 0 0,1 285,250 A 105,105 0 0,1 400,290 Z";
+      createPath(svg, d1, (activeMask & (1<<1)) ? colors[1] : '#1e293b', () => toggleRegion(1), "Только C");
+
+      // A & B (6):
+      const d6 = "M 175,120 A 105,105 0 0,1 250,230 A 105,105 0 0,1 215,250 A 105,105 0 0,0 175,120 Z";
+      createPath(svg, d6, (activeMask & (1<<6)) ? colors[6] : '#1e293b', () => toggleRegion(6), "A ∩ B \\ C");
+
+      // A & C (5):
+      const d5 = "M 325,120 A 105,105 0 0,0 250,230 A 105,105 0 0,0 285,250 A 105,105 0 0,1 325,120 Z";
+      createPath(svg, d5, (activeMask & (1<<5)) ? colors[5] : '#1e293b', () => toggleRegion(5), "A ∩ C \\ B");
+
+      // B & C (3):
+      const d3 = "M 215,250 A 105,105 0 0,0 285,250 A 105,105 0 0,1 250,330 A 105,105 0 0,1 215,250 Z";
+      createPath(svg, d3, (activeMask & (1<<3)) ? colors[3] : '#1e293b', () => toggleRegion(3), "B ∩ C \\ A");
+
+      // Outlines
+      drawCircleOutline(svg, cA.x, cA.y, cA.r, '#ef4444', 'A', 245, 100);
+      drawCircleOutline(svg, cB.x, cB.y, cB.r, '#3b82f6', 'B', 120, 310);
+      drawCircleOutline(svg, cC.x, cC.y, cC.r, '#22c55e', 'C', 380, 310);
+
+      document.getElementById('legend-box').innerHTML = `
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div> Множество A</div>
+        <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div> Множество B</div>
+        <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div> Множество C</div>
+      `;
+    }
+
+    function createPath(svg, d, fill, clickFn, title) {
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('d', d);
+      p.setAttribute('fill', fill);
+      p.setAttribute('fill-opacity', fill === '#1e293b' ? '0.3' : '0.85');
+      p.setAttribute('stroke', '#475569');
+      p.setAttribute('stroke-width', '1');
+      p.classList.add('region');
+      p.onclick = clickFn;
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      t.textContent = title;
+      p.appendChild(t);
+      svg.appendChild(p);
+    }
+
+    function drawCircleOutline(svg, cx, cy, r, color, label, lx, ly) {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', cx);
+      c.setAttribute('cy', cy);
+      c.setAttribute('r', r);
+      c.setAttribute('fill', 'none');
+      c.setAttribute('stroke', color);
+      c.setAttribute('stroke-width', '2.5');
+      c.setAttribute('pointer-events', 'none');
+      svg.appendChild(c);
+
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', lx);
+      t.setAttribute('y', ly);
+      t.setAttribute('fill', color);
+      t.setAttribute('font-size', '20');
+      t.setAttribute('font-weight', 'bold');
+      t.textContent = label;
+      svg.appendChild(t);
+    }
+
+    function updateTable() {
+      const table = document.getElementById('truth-table');
+      const total = (numSets === 2) ? 4 : 8;
+      
+      let html = '<thead><tr>';
+      html += '<th>A</th><th>B</th>';
+      if (numSets === 3) html += '<th>C</th>';
+      html += '<th>Минтерм</th><th>Включено?</th></tr></thead><tbody>';
+
+      for (let i = 0; i < total; i++) {
+        const a = !!(i & (numSets === 2 ? 2 : 4));
+        const b = !!(i & (numSets === 2 ? 1 : 2));
+        const c = (numSets === 3) ? !!(i & 1) : false;
+        const active = (activeMask & (1 << i)) !== 0;
+
+        let term = '';
+        if (numSets === 2) {
+          term = (a ? 'A' : 'A̅') + ' ∩ ' + (b ? 'B' : 'B̅');
+        } else {
+          term = (a ? 'A' : 'A̅') + ' ∩ ' + (b ? 'B' : 'B̅') + ' ∩ ' + (c ? 'C' : 'C̅');
+        }
+
+        html += `<tr class="${active ? 'active-row' : ''}">`;
+        html += `<td>${a ? 1 : 0}</td><td>${b ? 1 : 0}</td>`;
+        if (numSets === 3) html += `<td>${c ? 1 : 0}</td>`;
+        html += `<td>${term}</td>`;
+        html += `<td>${active ? '<span class="badge" style="background:#0284c7">ДА (1)</span>' : '<span class="badge">НЕТ (0)</span>'}</td>`;
+        html += '</tr>';
+      }
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    // Initial setup
+    setSetsMode(3);
+    setPreset("A ∪ B ∪ C", 254);
+  </script>
+</body>
+</html>
