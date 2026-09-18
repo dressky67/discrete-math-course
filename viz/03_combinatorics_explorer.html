@@ -1,0 +1,483 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивный комбинаторный проводник | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --gold: #facc15;
+      --purple: #c084fc;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input[type="range"] {
+      accent-color: var(--accent);
+    }
+    .btn-group {
+      display: flex;
+      gap: 6px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    /* Pascal Triangle */
+    .pascal-scroll {
+      overflow-x: auto;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 10px;
+      text-align: center;
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .pascal-row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 6px;
+      gap: 6px;
+    }
+    .pascal-cell {
+      min-width: 38px;
+      height: 34px;
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .pascal-cell:hover {
+      transform: scale(1.15);
+      border-color: var(--gold);
+      z-index: 10;
+    }
+    .pascal-cell.odd-cell {
+      background: rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+    .pascal-cell.even-cell {
+      background: #1e293b;
+      color: #64748b;
+    }
+    .pascal-cell.highlight-parent {
+      background: rgba(245, 158, 11, 0.4);
+      border-color: #f59e0b;
+      color: #facc15;
+    }
+    .pascal-cell.highlight-target {
+      background: #0284c7;
+      color: #fff;
+      transform: scale(1.1);
+    }
+    /* Calculator */
+    .calc-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .input-field label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 12px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 1.1rem;
+      font-family: monospace;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .results-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .res-card {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .res-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .res-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .res-formula {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+    .res-val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--accent);
+    }
+    .info-box {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #93c5fd;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Интерактивный комбинаторный проводник</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 3: Сочетания, размещения, треугольник Паскаля и субфакториал</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Треугольник Паскаля -->
+    <div class="card">
+      <div class="card-title">
+        <span>Треугольник Паскаля</span>
+        <div class="btn-group">
+          <button id="btn-mode-normal" class="active" onclick="setPascalMode('normal')">Числа</button>
+          <button id="btn-mode-parity" onclick="setPascalMode('parity')">Чётность (Серпинский)</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="slider-group">
+          <label for="pascal-depth">Глубина (N):</label>
+          <input type="range" id="pascal-depth" min="3" max="12" value="8" oninput="renderPascal()">
+          <span id="depth-val" style="font-weight: 700; color: var(--accent);">8</span>
+        </div>
+      </div>
+
+      <div class="pascal-scroll" id="pascal-container"></div>
+
+      <div class="info-box" id="cell-detail">
+        Наведите курсор на любое число $\binom{n}{k}$, чтобы увидеть формулу и родителей $\binom{n-1}{k-1} + \binom{n-1}{k}$.
+      </div>
+    </div>
+
+    <!-- Правая колонка: Калькулятор комбинаторики -->
+    <div class="card">
+      <div class="card-title">Комбинаторный калькулятор</div>
+
+      <div class="calc-row">
+        <div class="input-field">
+          <label for="input-n">Общий объем генеральной совокупности (n):</label>
+          <input type="number" id="input-n" min="1" max="25" value="7" oninput="calculateAll()">
+        </div>
+        <div class="input-field">
+          <label for="input-k">Объем выборки (k):</label>
+          <input type="number" id="input-k" min="0" max="25" value="3" oninput="calculateAll()">
+        </div>
+      </div>
+
+      <div class="results-grid">
+        <div class="res-card">
+          <div class="res-meta">
+            <span class="res-title">Сочетания без повторений C(n, k)</span>
+            <span class="res-formula">C = n! / (k! * (n - k)!)</span>
+          </div>
+          <span class="res-val" id="res-c">35</span>
+        </div>
+
+        <div class="res-card">
+          <div class="res-meta">
+            <span class="res-title">Размещения без повторений A(n, k)</span>
+            <span class="res-formula">A = n! / (n - k)!</span>
+          </div>
+          <span class="res-val" id="res-a">210</span>
+        </div>
+
+        <div class="res-card">
+          <div class="res-meta">
+            <span class="res-title">Перестановки P(n)</span>
+            <span class="res-formula">P = n!</span>
+          </div>
+          <span class="res-val" id="res-p">5 040</span>
+        </div>
+
+        <div class="res-card">
+          <div class="res-meta">
+            <span class="res-title">Размещения с повторениями Ā(n, k)</span>
+            <span class="res-formula">Ā = n^k</span>
+          </div>
+          <span class="res-val" id="res-arep">343</span>
+        </div>
+
+        <div class="res-card">
+          <div class="res-meta">
+            <span class="res-title">Сочетания с повторениями C̄(n, k)</span>
+            <span class="res-formula">C̄ = (n + k - 1)! / (k! * (n - 1)!)</span>
+          </div>
+          <span class="res-val" id="res-crep">84</span>
+        </div>
+
+        <div class="res-card">
+          <div class="res-meta">
+            <span class="res-title">Беспорядки (субфакториал) !n</span>
+            <span class="res-formula">!n = n! * sum((-1)^j / j!) ≈ [n! / e]</span>
+          </div>
+          <span class="res-val" id="res-derang" style="color: var(--gold);">1 854</span>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top: 20px;">
+        <strong>Свойство субфакториала:</strong> отношение !n / n! быстро сходится к 1/e ≈ 0.367879. Доля перестановок без неподвижных точек:
+        <span id="derang-ratio" style="font-weight: 700; color: var(--gold);">36.79%</span>.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pascalMode = 'normal';
+
+    function setPascalMode(mode) {
+      pascalMode = mode;
+      document.getElementById('btn-mode-normal').classList.toggle('active', mode === 'normal');
+      document.getElementById('btn-mode-parity').classList.toggle('active', mode === 'parity');
+      renderPascal();
+    }
+
+    function factorial(n) {
+      if (n < 0) return 0;
+      let res = 1n;
+      for (let i = 2n; i <= BigInt(n); i++) res *= i;
+      return res;
+    }
+
+    function comb(n, k) {
+      if (k < 0 || k > n) return 0n;
+      return factorial(n) / (factorial(k) * factorial(n - k));
+    }
+
+    function subfactorial(n) {
+      if (n === 0) return 1n;
+      if (n === 1) return 0n;
+      let d0 = 1n, d1 = 0n;
+      for (let i = 2; i <= n; i++) {
+        let dn = BigInt(i - 1) * (d1 + d0);
+        d0 = d1;
+        d1 = dn;
+      }
+      return d1;
+    }
+
+    function renderPascal() {
+      const depth = parseInt(document.getElementById('pascal-depth').value, 10);
+      document.getElementById('depth-val').textContent = depth;
+      const container = document.getElementById('pascal-container');
+      container.innerHTML = '';
+
+      for (let n = 0; n <= depth; n++) {
+        const row = document.createElement('div');
+        row.className = 'pascal-row';
+
+        for (let k = 0; k <= n; k++) {
+          const val = comb(n, k);
+          const cell = document.createElement('div');
+          cell.className = 'pascal-cell';
+          cell.dataset.n = n;
+          cell.dataset.k = k;
+          cell.dataset.val = val.toString();
+
+          if (pascalMode === 'parity') {
+            if (val % 2n === 1n) {
+              cell.classList.add('odd-cell');
+              cell.textContent = '1';
+            } else {
+              cell.classList.add('even-cell');
+              cell.textContent = '0';
+            }
+          } else {
+            cell.textContent = val.toString();
+          }
+
+          cell.onmouseenter = () => highlightCell(n, k, val);
+          cell.onmouseleave = clearHighlight;
+          row.appendChild(cell);
+        }
+        container.appendChild(row);
+      }
+    }
+
+    function highlightCell(n, k, val) {
+      clearHighlight();
+      const target = document.querySelector(`.pascal-cell[data-n="${n}"][data-k="${k}"]`);
+      if (target) target.classList.add('highlight-target');
+
+      let parentInfo = '';
+      if (n > 0) {
+        const p1 = document.querySelector(`.pascal-cell[data-n="${n-1}"][data-k="${k-1}"]`);
+        const p2 = document.querySelector(`.pascal-cell[data-n="${n-1}"][data-k="${k}"]`);
+        if (p1) p1.classList.add('highlight-parent');
+        if (p2) p2.classList.add('highlight-parent');
+
+        const v1 = p1 ? p1.dataset.val : 0;
+        const v2 = p2 ? p2.dataset.val : 0;
+        parentInfo = ` = C(${n-1}, ${k-1}) [${v1}] + C(${n-1}, ${k}) [${v2}]`;
+      }
+
+      const sumRow = 2n ** BigInt(n);
+      document.getElementById('cell-detail').innerHTML = `
+        <strong>Элемент:</strong> C(${n}, ${k}) = <strong>${val.toLocaleString()}</strong>${parentInfo}.<br>
+        <strong>Сумма элементов ${n}-й строки:</strong> &sum; C(${n}, k) = 2<sup>${n}</sup> = <strong>${sumRow.toLocaleString()}</strong>.
+      `;
+    }
+
+    function clearHighlight() {
+      document.querySelectorAll('.pascal-cell').forEach(c => {
+        c.classList.remove('highlight-target', 'highlight-parent');
+      });
+    }
+
+    function calculateAll() {
+      const n = parseInt(document.getElementById('input-n').value, 10) || 0;
+      const k = parseInt(document.getElementById('input-k').value, 10) || 0;
+
+      const pVal = factorial(n);
+      document.getElementById('res-p').textContent = pVal.toLocaleString();
+
+      if (k >= 0 && k <= n) {
+        const cVal = comb(n, k);
+        const aVal = factorial(n) / factorial(n - k);
+        document.getElementById('res-c').textContent = cVal.toLocaleString();
+        document.getElementById('res-a').textContent = aVal.toLocaleString();
+      } else {
+        document.getElementById('res-c').textContent = '0 (k > n)';
+        document.getElementById('res-a').textContent = '0 (k > n)';
+      }
+
+      // With repetitions
+      if (n > 0) {
+        const arepVal = BigInt(n) ** BigInt(k);
+        document.getElementById('res-arep').textContent = arepVal.toLocaleString();
+
+        const crepVal = comb(n + k - 1, k);
+        document.getElementById('res-crep').textContent = crepVal.toLocaleString();
+      }
+
+      // Derangements
+      const dVal = subfactorial(n);
+      document.getElementById('res-derang').textContent = dVal.toLocaleString();
+
+      if (pVal > 0n) {
+        const ratio = (Number(dVal) / Number(pVal) * 100).toFixed(2);
+        document.getElementById('derang-ratio').textContent = `${ratio}%`;
+      }
+    }
+
+    // Init
+    renderPascal();
+    calculateAll();
+  </script>
+</body>
+</html>
