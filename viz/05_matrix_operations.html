@@ -1,0 +1,589 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивный матричный процессор | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --gold: #facc15;
+      --purple: #c084fc;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 950px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    /* Matrices Layout */
+    .calc-layout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 20px 0;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+    .matrix-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .matrix-label {
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+    .matrix-grid {
+      display: grid;
+      gap: 4px;
+      padding: 6px 10px;
+      background: #090d16;
+      border-left: 3px solid var(--accent);
+      border-right: 3px solid var(--accent);
+      border-radius: 6px;
+    }
+    .matrix-grid input {
+      width: 46px;
+      height: 38px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: monospace;
+      font-size: 1rem;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .matrix-grid input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .cell-res {
+      width: 48px;
+      height: 38px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .cell-res:hover, .cell-res.active {
+      background: var(--accent);
+      color: #0f172a;
+      transform: scale(1.08);
+    }
+    .highlight-row {
+      background: rgba(245, 158, 11, 0.3) !important;
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+    }
+    .highlight-col {
+      background: rgba(56, 189, 248, 0.3) !important;
+      border-color: var(--accent) !important;
+      color: var(--accent) !important;
+    }
+    .op-symbol {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .dot-product-panel {
+      background: #090d16;
+      border: 1px dashed var(--gold);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: #fef08a;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    /* Steps panel */
+    .steps-container {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      max-height: 420px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .step-block {
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .step-desc {
+      color: var(--accent);
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .matrix-display {
+      display: inline-block;
+      border-left: 2px solid #64748b;
+      border-right: 2px solid #64748b;
+      padding: 2px 6px;
+      margin: 4px 0;
+    }
+    .info-bar {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #bae6fd;
+      font-size: 0.85rem;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Интерактивный матричный процессор</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 5: Умножение, ранг, метод Гаусса-Жордана и обращение матриц</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Умножение матриц -->
+    <div class="card">
+      <div class="card-title">
+        <span>Матричное умножение (A &times; B = C)</span>
+        <div class="btn-group" style="margin-bottom: 0;">
+          <button id="size-2" onclick="setMulSize(2, 2, 2)">2 &times; 2</button>
+          <button id="size-3" class="active" onclick="setMulSize(3, 3, 3)">3 &times; 3</button>
+          <button id="size-rect" onclick="setMulSize(2, 3, 2)">2&times;3 &times; 3&times;2</button>
+        </div>
+      </div>
+
+      <div class="calc-layout">
+        <!-- Matrix A -->
+        <div class="matrix-box">
+          <div class="matrix-label" style="color: var(--gold);">A (<span id="dims-a">3&times;3</span>)</div>
+          <div class="matrix-grid" id="grid-a"></div>
+        </div>
+
+        <div class="op-symbol">&times;</div>
+
+        <!-- Matrix B -->
+        <div class="matrix-box">
+          <div class="matrix-label" style="color: var(--accent);">B (<span id="dims-b">3&times;3</span>)</div>
+          <div class="matrix-grid" id="grid-b"></div>
+        </div>
+
+        <div class="op-symbol">=</div>
+
+        <!-- Matrix C -->
+        <div class="matrix-box">
+          <div class="matrix-label" style="color: var(--green);">C = A &times; B</div>
+          <div class="matrix-grid" id="grid-c"></div>
+        </div>
+      </div>
+
+      <div class="dot-product-panel" id="dot-panel">
+        Наведите курсор на любую ячейку матрицы C, чтобы увидеть скалярное произведение строки A на столбец B.
+      </div>
+
+      <div class="btn-group" style="margin-top: 16px;">
+        <button onclick="setMulPreset('example51')">Пример 5.1 (Неквадратные)</button>
+        <button onclick="setMulPreset('nilpotent')">Нильпотентная матрица</button>
+        <button onclick="setMulPreset('identity')">Умножение на I</button>
+        <button onclick="randomizeMul()">Случайные числа</button>
+      </div>
+
+      <div class="info-bar">
+        <strong>Обратите внимание:</strong> Элемент $c_{ij}$ получается как сумма произведений $i$-й строки матрицы $A$ на $j$-й столбец матрицы $B$. Матричное умножение ассоциативно $A(BC) = (AB)C$, но не коммутативно ($AB \neq BA$).
+      </div>
+    </div>
+
+    <!-- Правая колонка: Гаусс-Жордан, ранг и обратная матрица -->
+    <div class="card">
+      <div class="card-title">
+        <span>Метод Гаусса-Жордана и $A^{-1}$</span>
+        <button onclick="computeGaussJordan()" style="background: var(--accent); color: #0f172a; font-weight: bold;">Вычислить A⁻¹ и ранг</button>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="setGaussPreset('example52')">Пример 5.2 (Обратимая 3&times;3)</button>
+        <button onclick="setGaussPreset('singular')">Вырожденная (ранг 2)</button>
+        <button onclick="setGaussPreset('diag')">Диагональная</button>
+      </div>
+
+      <div class="steps-container" id="steps-container">
+        Нажмите «Вычислить A⁻¹ и ранг» для пошаговой трассировки приведения матрицы $[A \mid I]$ к ступенчатому виду и RREF.
+      </div>
+
+      <div class="info-bar" id="rank-result" style="margin-top: 16px;">
+        <strong>Статус:</strong> Готов к вычислению.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let rowsA = 3, colsA = 3, colsB = 3;
+    let matA = [], matB = [];
+
+    function setMulSize(rA, cA, cB) {
+      rowsA = rA; colsA = cA; colsB = cB;
+      document.getElementById('size-2').classList.toggle('active', rA === 2 && cA === 2 && cB === 2);
+      document.getElementById('size-3').classList.toggle('active', rA === 3 && cA === 3 && cB === 3);
+      document.getElementById('size-rect').classList.toggle('active', rA === 2 && cA === 3 && cB === 2);
+
+      document.getElementById('dims-a').textContent = `${rowsA}×${colsA}`;
+      document.getElementById('dims-b').textContent = `${colsA}×${colsB}`;
+
+      matA = Array.from({ length: rowsA }, () => Array(colsA).fill(0));
+      matB = Array.from({ length: colsA }, () => Array(colsB).fill(0));
+
+      // Fill default values
+      for (let i = 0; i < rowsA; i++) {
+        for (let j = 0; j < colsA; j++) {
+          matA[i][j] = (i === j) ? 2 : (i + j);
+        }
+      }
+      for (let i = 0; i < colsA; i++) {
+        for (let j = 0; j < colsB; j++) {
+          matB[i][j] = (i === j) ? 1 : 1;
+        }
+      }
+
+      renderGrids();
+    }
+
+    function renderGrids() {
+      const gridA = document.getElementById('grid-a');
+      const gridB = document.getElementById('grid-b');
+      const gridC = document.getElementById('grid-c');
+
+      gridA.style.gridTemplateColumns = `repeat(${colsA}, 1fr)`;
+      gridB.style.gridTemplateColumns = `repeat(${colsB}, 1fr)`;
+      gridC.style.gridTemplateColumns = `repeat(${colsB}, 1fr)`;
+
+      gridA.innerHTML = '';
+      gridB.innerHTML = '';
+      gridC.innerHTML = '';
+
+      for (let i = 0; i < rowsA; i++) {
+        for (let j = 0; j < colsA; j++) {
+          const inp = document.createElement('input');
+          inp.type = 'number';
+          inp.value = matA[i][j];
+          inp.dataset.row = i;
+          inp.dataset.col = j;
+          inp.id = `a-${i}-${j}`;
+          inp.oninput = (e) => {
+            matA[i][j] = parseFloat(e.target.value) || 0;
+            updateC();
+          };
+          gridA.appendChild(inp);
+        }
+      }
+
+      for (let i = 0; i < colsA; i++) {
+        for (let j = 0; j < colsB; j++) {
+          const inp = document.createElement('input');
+          inp.type = 'number';
+          inp.value = matB[i][j];
+          inp.dataset.row = i;
+          inp.dataset.col = j;
+          inp.id = `b-${i}-${j}`;
+          inp.oninput = (e) => {
+            matB[i][j] = parseFloat(e.target.value) || 0;
+            updateC();
+          };
+          gridB.appendChild(inp);
+        }
+      }
+
+      for (let i = 0; i < rowsA; i++) {
+        for (let j = 0; j < colsB; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell-res';
+          cell.id = `c-${i}-${j}`;
+          cell.onmouseenter = () => highlightDotProduct(i, j);
+          cell.onmouseleave = clearHighlight;
+          gridC.appendChild(cell);
+        }
+      }
+
+      updateC();
+    }
+
+    function updateC() {
+      for (let i = 0; i < rowsA; i++) {
+        for (let j = 0; j < colsB; j++) {
+          let sum = 0;
+          for (let k = 0; k < colsA; k++) {
+            sum += matA[i][k] * matB[k][j];
+          }
+          const cell = document.getElementById(`c-${i}-${j}`);
+          if (cell) cell.textContent = Number(sum.toFixed(2));
+        }
+      }
+    }
+
+    function highlightDotProduct(row, col) {
+      clearHighlight();
+      document.getElementById(`c-${row}-${col}`).classList.add('active');
+
+      const terms = [];
+      let sum = 0;
+      for (let k = 0; k < colsA; k++) {
+        const inpA = document.getElementById(`a-${row}-${k}`);
+        const inpB = document.getElementById(`b-${k}-${col}`);
+        if (inpA) inpA.classList.add('highlight-row');
+        if (inpB) inpB.classList.add('highlight-col');
+
+        const valA = matA[row][k];
+        const valB = matB[k][col];
+        const prod = valA * valB;
+        sum += prod;
+        terms.push(`(${valA} × ${valB})`);
+      }
+
+      document.getElementById('dot-panel').innerHTML = `
+        c<sub>${row+1},${col+1}</sub> = Строка ${row+1} &times; Столбец ${col+1} =<br>
+        ${terms.join(' + ')} = <strong>${sum}</strong>
+      `;
+    }
+
+    function clearHighlight() {
+      document.querySelectorAll('.matrix-grid input').forEach(el => {
+        el.classList.remove('highlight-row', 'highlight-col');
+      });
+      document.querySelectorAll('.cell-res').forEach(el => el.classList.remove('active'));
+    }
+
+    function setMulPreset(name) {
+      if (name === 'example51') {
+        setMulSize(2, 3, 2);
+        matA = [[1, -2, 3], [0, 4, -1]];
+        matB = [[2, 1], [-3, 0], [1, 5]];
+      } else if (name === 'nilpotent') {
+        setMulSize(3, 3, 3);
+        matA = [[0, 1, 0], [0, 0, 1], [0, 0, 0]];
+        matB = [[0, 1, 0], [0, 0, 1], [0, 0, 0]];
+      } else if (name === 'identity') {
+        setMulSize(3, 3, 3);
+        matA = [[3, 2, 1], [0, 4, 5], [-1, 2, 6]];
+        matB = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+      }
+      renderGrids();
+    }
+
+    function randomizeMul() {
+      for (let i = 0; i < rowsA; i++) {
+        for (let j = 0; j < colsA; j++) matA[i][j] = Math.floor(Math.random() * 9) - 4;
+      }
+      for (let i = 0; i < colsA; i++) {
+        for (let j = 0; j < colsB; j++) matB[i][j] = Math.floor(Math.random() * 9) - 4;
+      }
+      renderGrids();
+    }
+
+    // Gauss-Jordan Algorithm
+    let gaussMat = [
+      [1, 2, 3],
+      [2, 5, 7],
+      [3, 7, 11]
+    ];
+
+    function setGaussPreset(preset) {
+      if (preset === 'example52') {
+        gaussMat = [
+          [1, 2, 3],
+          [2, 5, 7],
+          [3, 7, 11]
+        ];
+      } else if (preset === 'singular') {
+        gaussMat = [
+          [1, 2, 3],
+          [2, 4, 6],
+          [1, 1, 1]
+        ];
+      } else if (preset === 'diag') {
+        gaussMat = [
+          [2, 0, 0],
+          [0, 3, 0],
+          [0, 0, 4]
+        ];
+      }
+      computeGaussJordan();
+    }
+
+    function formatAugmented(M, n) {
+      let s = '<div class="matrix-display">';
+      for (let i = 0; i < n; i++) {
+        const left = M[i].slice(0, n).map(x => (Math.abs(x) < 1e-9 ? 0 : Number(x.toFixed(2))).toString().padStart(5)).join(' ');
+        const right = M[i].slice(n).map(x => (Math.abs(x) < 1e-9 ? 0 : Number(x.toFixed(2))).toString().padStart(5)).join(' ');
+        s += `${left}  |  ${right}<br>`;
+      }
+      s += '</div>';
+      return s;
+    }
+
+    function computeGaussJordan() {
+      const container = document.getElementById('steps-container');
+      container.innerHTML = '';
+
+      const n = 3;
+      // Augmented matrix [A | I]
+      let M = Array.from({ length: n }, (_, i) => {
+        const row = [...gaussMat[i]];
+        for (let j = 0; j < n; j++) row.push(i === j ? 1 : 0);
+        return row;
+      });
+
+      function addStep(desc) {
+        const d = document.createElement('div');
+        d.className = 'step-block';
+        d.innerHTML = `<div class="step-desc">${desc}</div>${formatAugmented(M, n)}`;
+        container.appendChild(d);
+      }
+
+      addStep('Исходная расширенная матрица [A | I]:');
+
+      let rank = 0;
+
+      // Forward elimination
+      for (let col = 0; col < n; col++) {
+        // Find pivot
+        let maxRow = rank;
+        for (let r = rank + 1; r < n; r++) {
+          if (Math.abs(M[r][col]) > Math.abs(M[maxRow][col])) maxRow = r;
+        }
+
+        if (Math.abs(M[maxRow][col]) < 1e-9) {
+          // Column is zero, skip
+          continue;
+        }
+
+        if (maxRow !== rank) {
+          const tmp = M[rank];
+          M[rank] = M[maxRow];
+          M[maxRow] = tmp;
+          addStep(`Перестановка строк R${rank+1} &harr; R${maxRow+1}`);
+        }
+
+        // Normalize pivot row
+        const pivotVal = M[rank][col];
+        if (Math.abs(pivotVal - 1) > 1e-9) {
+          for (let j = 0; j < 2 * n; j++) M[rank][j] /= pivotVal;
+          addStep(`Нормализация: R${rank+1} &rarr; R${rank+1} / (${Number(pivotVal.toFixed(2))})`);
+        }
+
+        // Eliminate column elements in all other rows
+        for (let r = 0; r < n; r++) {
+          if (r !== rank && Math.abs(M[r][col]) > 1e-9) {
+            const factor = M[r][col];
+            for (let j = 0; j < 2 * n; j++) {
+              M[r][j] -= factor * M[rank][j];
+            }
+            addStep(`Обнуление позиции (${r+1}, ${col+1}): R${r+1} &rarr; R${r+1} - (${Number(factor.toFixed(2))}) &times; R${rank+1}`);
+          }
+        }
+        rank++;
+      }
+
+      const resBox = document.getElementById('rank-result');
+      if (rank === n) {
+        resBox.innerHTML = `<strong style="color: var(--green);">Матрица обратима! Ранг = ${rank}.</strong><br>Обратная матрица A⁻¹ находится в правой половине RREF.`;
+        addStep('Финальный вид [I | A⁻¹]: обратная матрица успешно получена!');
+      } else {
+        resBox.innerHTML = `<strong style="color: var(--red);">Матрица вырождена! Ранг = ${rank} < 3.</strong><br>Обратная матрица не существует.`;
+        addStep('Процесс завершен. В левой половине образовались нулевые строки. Обратной матрицы нет.');
+      }
+    }
+
+    // Init
+    setMulSize(3, 3, 3);
+    computeGaussJordan();
+  </script>
+</body>
+</html>
