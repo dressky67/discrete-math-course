@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Глава 9: Булевы функции, минимизация и криптография</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --success: #4ade80;
+      --warning: #facc15;
+      --danger: #f87171;
+      --purple: #c084fc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    header {
+      max-width: 1200px;
+      margin: 0 auto 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    header p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      max-width: 1200px;
+      margin: 0 auto 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .tab-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .tab-content.active {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    label {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      min-width: 80px;
+    }
+    input[type="number"], input[type="text"], select {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+    button.action-btn {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button.action-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    button.sec-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button.sec-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .karnaugh-grid {
+      display: grid;
+      margin: 15px 0;
+      gap: 2px;
+      background: var(--border);
+      padding: 2px;
+      border-radius: 6px;
+      width: fit-content;
+    }
+    .k-cell {
+      width: 54px;
+      height: 54px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 700;
+      font-size: 1.1rem;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .k-cell:hover {
+      background: #1e293b;
+      border: 1px solid var(--accent);
+    }
+    .k-cell.one {
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+    }
+    .k-cell.zero {
+      color: var(--text-dim);
+    }
+    .k-header {
+      background: #1e293b;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .k-cell-idx {
+      font-size: 0.65rem;
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      color: #64748b;
+      font-weight: 400;
+    }
+    .formula-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: var(--success);
+      margin: 10px 0;
+      word-break: break-all;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge.yes { background: rgba(74, 222, 128, 0.2); color: var(--success); }
+    .badge.no { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+    table.data-table th, table.data-table td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: center;
+    }
+    table.data-table th {
+      background: #0f172a;
+      color: var(--text-dim);
+    }
+    .steps-log {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      max-height: 280px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+    .highlight {
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .crypto-step {
+      border-left: 3px solid var(--purple);
+      padding-left: 12px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Интерактивная лаборатория: Булевы функции и криптография</h1>
+    <p>Визуализатор к Главе 9. Минимизация по картам Карно, критерий Поста, алгоритм Евклида и шифрование RSA</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('karnaugh')">1. Карта Карно и СДНФ</button>
+    <button class="tab-btn" onclick="switchTab('post')">2. Классы Поста и Полнота</button>
+    <button class="tab-btn" onclick="switchTab('euclid')">3. Алгоритм Евклида и Безу</button>
+    <button class="tab-btn" onclick="switchTab('rsa')">4. Криптосистема RSA</button>
+  </div>
+
+  <div class="container">
+    <!-- TAB 1: KARNAUGH MAP -->
+    <div id="tab-karnaugh" class="tab-content active">
+      <div class="card">
+        <h2>Карта Карно (3 переменные x, y, z)</h2>
+        <div class="controls">
+          <div class="control-row">
+            <span style="font-size: 0.85rem; color: var(--text-dim);">Кликайте по ячейкам таблицы для переключения 0 / 1:</span>
+          </div>
+          <div class="control-row">
+            <button class="sec-btn" onclick="setKarnaughPreset('zero')">Все 0</button>
+            <button class="sec-btn" onclick="setKarnaughPreset('one')">Все 1</button>
+            <button class="sec-btn" onclick="setKarnaughPreset('majority')">Мажоритарная (2 из 3)</button>
+            <button class="sec-btn" onclick="setKarnaughPreset('xor')">Четность (XOR)</button>
+            <button class="sec-btn" onclick="setKarnaughPreset('random')">Случайная</button>
+          </div>
+        </div>
+
+        <div id="karnaughContainer"></div>
+
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 10px;">
+          Строки кодируются x ∈ {0, 1}, столбцы упорядочены кодом Грея: yz ∈ {00, 01, 11, 10}. Соседние клетки отличаются ровно в одном бите.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Анализ и синтез формул</h2>
+        <div>
+          <label>Совершенная ДНФ (СДНФ):</label>
+          <div class="formula-box" id="sdnfOutput">0</div>
+        </div>
+        <div style="margin-top: 12px;">
+          <label>Минимизированная ДНФ (склеивание смежных 1):</label>
+          <div class="formula-box" id="minDnfOutput" style="color: var(--accent);">0</div>
+        </div>
+        <div style="margin-top: 12px;">
+          <label>Полином Жегалкина (над полем F₂):</label>
+          <div class="formula-box" id="zhegalkinOutput" style="color: var(--purple);">0</div>
+        </div>
+        <div style="margin-top: 12px;">
+          <label>Свойства функции:</label>
+          <div id="quickProperties" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: POST COMPLETENESS -->
+    <div id="tab-post" class="tab-content">
+      <div class="card">
+        <h2>Проверка системы по критерию Поста</h2>
+        <div class="controls">
+          <p style="font-size: 0.85rem; color: var(--text-dim);">
+            Система булевых функций полна тогда и только тогда, когда она не содержится целиком ни в одном из 5 замкнутых предполных классов: T₀, T₁, S, M, L.
+          </p>
+          <div class="control-row" style="margin-top: 8px;">
+            <label>Выберите набор:</label>
+            <select id="postPresetSelect" onchange="applyPostPreset()">
+              <option value="sheffer">{ NAND (Шеффер) }</option>
+              <option value="pierce">{ NOR (Пирс) }</option>
+              <option value="classic">{ AND, OR, NOT }</option>
+              <option value="zhegalkin">{ XOR, AND, 1 }</option>
+              <option value="incomplete_monotone">{ AND, OR } (не полна)</option>
+              <option value="incomplete_linear">{ XOR, NOT, 0, 1 } (не полна)</option>
+            </select>
+          </div>
+        </div>
+
+        <table class="data-table" id="postTable">
+          <thead>
+            <tr>
+              <th>Функция</th>
+              <th>T₀ (сохр. 0)</th>
+              <th>T₁ (сохр. 1)</th>
+              <th>S (самодв.)</th>
+              <th>M (монот.)</th>
+              <th>L (линейн.)</th>
+            </tr>
+          </thead>
+          <tbody id="postTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Вердикт теоремы Поста</h2>
+        <div id="postVerdictBox" style="padding: 16px; border-radius: 8px; background: #0f172a; border: 1px solid var(--border); font-size: 0.95rem; line-height: 1.6;">
+        </div>
+        <div style="margin-top: 20px; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">
+          <h4 style="color: var(--text); margin-bottom: 6px;">Справка по классам:</h4>
+          <ul>
+            <li><b>T₀</b>: f(0, …, 0) = 0</li>
+            <li><b>T₁</b>: f(1, …, 1) = 1</li>
+            <li><b>S</b>: ¬f(x₁, …, xₙ) = f(¬x₁, …, ¬xₙ)</li>
+            <li><b>M</b>: при α ≤ β ⟹ f(α) ≤ f(β)</li>
+            <li><b>L</b>: полином Жегалкина не содержит конъюнкций (степень ≤ 1)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: EUCLID & BEZOUT -->
+    <div id="tab-euclid" class="tab-content">
+      <div class="card">
+        <h2>Расширенный алгоритм Евклида</h2>
+        <div class="controls">
+          <div class="control-row">
+            <label>Число a:</label>
+            <input type="number" id="euclidA" value="240" min="1" max="1000000" style="width: 120px;">
+            <label>Число b:</label>
+            <input type="number" id="euclidB" value="46" min="1" max="1000000" style="width: 120px;">
+            <button class="action-btn" onclick="calcEuclid()">Вычислить</button>
+          </div>
+          <div class="control-row">
+            <button class="sec-btn" onclick="setEuclidPreset(240, 46)">240 и 46</button>
+            <button class="sec-btn" onclick="setEuclidPreset(357, 123)">357 и 123</button>
+            <button class="sec-btn" onclick="setEuclidPreset(1071, 462)">1071 и 462</button>
+            <button class="sec-btn" onclick="setEuclidPreset(17, 3120)">17 и 3120 (RSA)</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <label>Линейное представление Безу:</label>
+          <div class="formula-box" id="bezoutFormula">НОД(a, b) = a·x + b·y</div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <label>Мультипликативный обратный a⁻¹ mod b:</label>
+          <div class="formula-box" id="modInverseResult">-</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Пошаговый протокол деления</h2>
+        <div class="steps-log" id="euclidLog"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: RSA -->
+    <div id="tab-rsa" class="tab-content">
+      <div class="card">
+        <h2>Генератор ключей RSA</h2>
+        <div class="controls">
+          <div class="control-row">
+            <label>Простое p:</label>
+            <input type="number" id="rsaP" value="61" style="width: 80px;">
+            <label>Простое q:</label>
+            <input type="number" id="rsaQ" value="53" style="width: 80px;">
+            <button class="action-btn" onclick="generateRSA()">Сгенерировать</button>
+          </div>
+          <div class="control-row">
+            <button class="sec-btn" onclick="setRsaPrimes(11, 13)">Малые (11, 13)</button>
+            <button class="sec-btn" onclick="setRsaPrimes(61, 53)">Средние (61, 53)</button>
+            <button class="sec-btn" onclick="setRsaPrimes(127, 131)">Большие (127, 131)</button>
+          </div>
+        </div>
+
+        <div class="crypto-step">
+          <div style="font-weight: 600; color: var(--accent);">1. Модуль и функция Эйлера:</div>
+          <div>n = p × q = <span id="rsaN" class="highlight">-</span></div>
+          <div>φ(n) = (p - 1)(q - 1) = <span id="rsaPhi" class="highlight">-</span></div>
+        </div>
+
+        <div class="crypto-step">
+          <div style="font-weight: 600; color: var(--accent);">2. Открытая и секретная экспонента:</div>
+          <div>Открытый ключ (e, n): <span id="rsaPubKey" class="highlight">-</span></div>
+          <div>Секретный ключ (d, n): <span id="rsaPrivKey" class="highlight" style="color: var(--danger);">-</span></div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
+            d · e ≡ 1 (mod φ(n)) (обратный элемент по Безу)
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Шифрование и Расшифрование</h2>
+        <div class="controls">
+          <div class="control-row">
+            <label>Сообщение m &lt; n:</label>
+            <input type="number" id="rsaMsg" value="65" style="width: 100px;">
+            <button class="action-btn" onclick="testEncrypt()">Зашифровать</button>
+          </div>
+        </div>
+
+        <div class="crypto-step">
+          <div style="font-weight: 600; color: var(--warning);">Шифрование:</div>
+          <div>Формула: c ≡ mᵉ mod n</div>
+          <div>Шифротекст: c = <span id="rsaCipher" class="highlight" style="color: var(--warning);">-</span></div>
+        </div>
+
+        <div class="crypto-step">
+          <div style="font-weight: 600; color: var(--success);">Расшифрование:</div>
+          <div>Формула: m' ≡ cᵈ mod n</div>
+          <div>Восстановленный текст: m' = <span id="rsaDecrypted" class="highlight" style="color: var(--success);">-</span></div>
+          <div id="rsaMatchStatus" style="margin-top: 6px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      const found = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (found) found.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // --- KARNAUGH & BOOLEAN ENGINE ---
+    // 3 variables: x (row: 0, 1), yz (col: 00, 01, 11, 10)
+    // Indexes 0..7 correspond to xyz:
+    // x=0: 000(0), 001(1), 011(3), 010(2)
+    // x=1: 100(4), 101(5), 111(7), 110(6)
+    const grayCols = [
+      { code: '00', y: 0, z: 0 },
+      { code: '01', y: 0, z: 1 },
+      { code: '11', y: 1, z: 1 },
+      { code: '10', y: 1, z: 0 }
+    ];
+    let kValues = [0, 0, 0, 1, 0, 1, 1, 1]; // default: majority
+
+    function renderKarnaugh() {
+      const container = document.getElementById('karnaughContainer');
+      let html = '<div class="karnaugh-grid" style="grid-template-columns: 60px repeat(4, 56px);">';
+      html += '<div class="k-header">x \\ yz</div>';
+      grayCols.forEach(c => { html += `<div class="k-header">${c.code}</div>`; });
+
+      for (let x = 0; x <= 1; x++) {
+        html += `<div class="k-header">x = ${x}</div>`;
+        for (let col = 0; col < 4; col++) {
+          const y = grayCols[col].y;
+          const z = grayCols[col].z;
+          const idx = (x << 2) | (y << 1) | z;
+          const val = kValues[idx];
+          html += `<div class="k-cell ${val ? 'one' : 'zero'}" onclick="toggleKCell(${idx})">
+                     <span class="k-cell-idx">${idx}</span>
+                     ${val}
+                   </div>`;
+        }
+      }
+      html += '</div>';
+      container.innerHTML = html;
+      updateBooleanFormulas();
+    }
+
+    function toggleKCell(idx) {
+      kValues[idx] = 1 - kValues[idx];
+      renderKarnaugh();
+    }
+
+    function setKarnaughPreset(type) {
+      if (type === 'zero') kValues = [0,0,0,0,0,0,0,0];
+      else if (type === 'one') kValues = [1,1,1,1,1,1,1,1];
+      else if (type === 'majority') {
+        for (let i = 0; i < 8; i++) {
+          const ones = (i & 1) + ((i >> 1) & 1) + ((i >> 2) & 1);
+          kValues[i] = ones >= 2 ? 1 : 0;
+        }
+      } else if (type === 'xor') {
+        for (let i = 0; i < 8; i++) {
+          const ones = (i & 1) + ((i >> 1) & 1) + ((i >> 2) & 1);
+          kValues[i] = ones % 2;
+        }
+      } else if (type === 'random') {
+        for (let i = 0; i < 8; i++) kValues[i] = Math.random() > 0.5 ? 1 : 0;
+      }
+      renderKarnaugh();
+    }
+
+    function updateBooleanFormulas() {
+      // 1. SDNF
+      const minterms = [];
+      for (let i = 0; i < 8; i++) {
+        if (kValues[i] === 1) {
+          const x = (i >> 2) & 1;
+          const y = (i >> 1) & 1;
+          const z = i & 1;
+          const term = `${x ? 'x' : '¬x'}${y ? 'y' : '¬y'}${z ? 'z' : '¬z'}`;
+          minterms.push(term);
+        }
+      }
+      document.getElementById('sdnfOutput').textContent = minterms.length ? minterms.join(' ∨ ') : '0';
+
+      // 2. Simplified DNF
+      document.getElementById('minDnfOutput').textContent = simplify3Var(kValues);
+
+      // 3. Zhegalkin polynomial
+      document.getElementById('zhegalkinOutput').textContent = calcZhegalkin(kValues);
+
+      // 4. Quick properties
+      renderQuickProps(kValues);
+    }
+
+    function simplify3Var(vals) {
+      const onesCount = vals.reduce((a,b)=>a+b, 0);
+      if (onesCount === 0) return '0 (тождественный 0)';
+      if (onesCount === 8) return '1 (тождественная 1)';
+
+      const quads = [
+        { mask: [0,1,2,3], term: '¬x' },
+        { mask: [4,5,6,7], term: 'x' },
+        { mask: [0,1,4,5], term: '¬y' },
+        { mask: [2,3,6,7], term: 'y' },
+        { mask: [0,2,4,6], term: '¬z' },
+        { mask: [1,3,5,7], term: 'z' }
+      ];
+
+      let covered = new Array(8).fill(false);
+      let chosenTerms = [];
+
+      for (let q of quads) {
+        if (q.mask.every(idx => vals[idx] === 1)) {
+          chosenTerms.push(q.term);
+          q.mask.forEach(idx => covered[idx] = true);
+        }
+      }
+
+      const pairs = [
+        { a: 0, b: 4, term: '¬y¬z' }, { a: 1, b: 5, term: '¬yz' },
+        { a: 2, b: 6, term: 'y¬z' }, { a: 3, b: 7, term: 'yz' },
+        { a: 0, b: 2, term: '¬x¬z' }, { a: 1, b: 3, term: '¬xz' },
+        { a: 4, b: 6, term: 'x¬z' }, { a: 5, b: 7, term: 'xz' },
+        { a: 0, b: 1, term: '¬x¬y' }, { a: 2, b: 3, term: '¬xy' },
+        { a: 4, b: 5, term: 'x¬y' }, { a: 6, b: 7, term: 'xy' }
+      ];
+
+      for (let p of pairs) {
+        if (vals[p.a] === 1 && vals[p.b] === 1) {
+          if (!covered[p.a] || !covered[p.b]) {
+            chosenTerms.push(p.term);
+            covered[p.a] = true;
+            covered[p.b] = true;
+          }
+        }
+      }
+
+      for (let i = 0; i < 8; i++) {
+        if (vals[i] === 1 && !covered[i]) {
+          const x = (i >> 2) & 1;
+          const y = (i >> 1) & 1;
+          const z = i & 1;
+          chosenTerms.push(`${x ? 'x' : '¬x'}${y ? 'y' : '¬y'}${z ? 'z' : '¬z'}`);
+        }
+      }
+
+      return chosenTerms.length ? [...new Set(chosenTerms)].join(' ∨ ') : '0';
+    }
+
+    function calcZhegalkin(vals) {
+      let table = [...vals];
+      const coeffs = [table[0]];
+      let len = 8;
+      while (len > 1) {
+        let next = [];
+        for (let i = 0; i < len - 1; i++) {
+          next.push(table[i] ^ table[i+1]);
+        }
+        coeffs.push(next[0]);
+        table = next;
+        len--;
+      }
+
+      const monomialNames = ['1', 'z', 'y', 'yz', 'x', 'xz', 'xy', 'xyz'];
+      let poly = [];
+      coeffs.forEach((c, idx) => {
+        if (c === 1) poly.push(monomialNames[idx]);
+      });
+      return poly.length ? poly.join(' ⊕ ') : '0';
+    }
+
+    function renderQuickProps(vals) {
+      const box = document.getElementById('quickProperties');
+      const t0 = vals[0] === 0;
+      const t1 = vals[7] === 1;
+
+      let isS = true;
+      for (let i = 0; i < 4; i++) {
+        if (vals[i] === vals[7 - i]) { isS = false; break; }
+      }
+
+      let isM = true;
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if ((i & j) === i && vals[i] > vals[j]) { isM = false; break; }
+        }
+      }
+
+      const zh = calcZhegalkin(vals);
+      const isL = !zh.includes('xy') && !zh.includes('xz') && !zh.includes('yz');
+
+      box.innerHTML = `
+        <span class="badge ${t0 ? 'yes' : 'no'}">T₀: ${t0 ? 'Да' : 'Нет'}</span>
+        <span class="badge ${t1 ? 'yes' : 'no'}">T₁: ${t1 ? 'Да' : 'Нет'}</span>
+        <span class="badge ${isS ? 'yes' : 'no'}">S (самодв.): ${isS ? 'Да' : 'Нет'}</span>
+        <span class="badge ${isM ? 'yes' : 'no'}">M (монот.): ${isM ? 'Да' : 'Нет'}</span>
+        <span class="badge ${isL ? 'yes' : 'no'}">L (линейн.): ${isL ? 'Да' : 'Нет'}</span>
+      `;
+    }
+
+    // --- TAB 2: POST PRESETS ---
+    const postPresets = {
+      sheffer: [
+        { name: 'Штрих Шеффера (NAND)', t0: false, t1: false, s: false, m: false, l: false }
+      ],
+      pierce: [
+        { name: 'Стрелка Пирса (NOR)', t0: false, t1: false, s: false, m: false, l: false }
+      ],
+      classic: [
+        { name: 'Конъюнкция (AND)', t0: true, t1: true, s: false, m: true, l: false },
+        { name: 'Дизъюнкция (OR)', t0: true, t1: true, s: false, m: true, l: false },
+        { name: 'Отрицание (NOT)', t0: false, t1: false, s: true, m: false, l: true }
+      ],
+      zhegalkin: [
+        { name: 'Сложение по мод 2 (XOR)', t0: true, t1: false, s: false, m: false, l: true },
+        { name: 'Конъюнкция (AND)', t0: true, t1: true, s: false, m: true, l: false },
+        { name: 'Константа 1', t0: false, t1: true, s: false, m: true, l: true }
+      ],
+      incomplete_monotone: [
+        { name: 'Конъюнкция (AND)', t0: true, t1: true, s: false, m: true, l: false },
+        { name: 'Дизъюнкция (OR)', t0: true, t1: true, s: false, m: true, l: false }
+      ],
+      incomplete_linear: [
+        { name: 'Сложение по мод 2 (XOR)', t0: true, t1: false, s: false, m: false, l: true },
+        { name: 'Отрицание (NOT)', t0: false, t1: false, s: true, m: false, l: true },
+        { name: 'Константа 1', t0: false, t1: true, s: false, m: true, l: true }
+      ]
+    };
+
+    function applyPostPreset() {
+      const key = document.getElementById('postPresetSelect').value;
+      const funcs = postPresets[key];
+      const tbody = document.getElementById('postTableBody');
+      tbody.innerHTML = '';
+
+      let hasNotT0 = false, hasNotT1 = false, hasNotS = false, hasNotM = false, hasNotL = false;
+
+      funcs.forEach(f => {
+        if (!f.t0) hasNotT0 = true;
+        if (!f.t1) hasNotT1 = true;
+        if (!f.s) hasNotS = true;
+        if (!f.m) hasNotM = true;
+        if (!f.l) hasNotL = true;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600; text-align: left; padding-left: 12px;">${f.name}</td>
+          <td><span class="badge ${f.t0 ? 'yes' : 'no'}">${f.t0 ? '+' : '−'}</span></td>
+          <td><span class="badge ${f.t1 ? 'yes' : 'no'}">${f.t1 ? '+' : '−'}</span></td>
+          <td><span class="badge ${f.s ? 'yes' : 'no'}">${f.s ? '+' : '−'}</span></td>
+          <td><span class="badge ${f.m ? 'yes' : 'no'}">${f.m ? '+' : '−'}</span></td>
+          <td><span class="badge ${f.l ? 'yes' : 'no'}">${f.l ? '+' : '−'}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const isComplete = hasNotT0 && hasNotT1 && hasNotS && hasNotM && hasNotL;
+      const vBox = document.getElementById('postVerdictBox');
+      if (isComplete) {
+        vBox.innerHTML = `
+          <div style="color: var(--success); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">
+            ✓ Система функционально ПОЛНА (базис)
+          </div>
+          <div>В данном наборе для каждого из 5 классов Поста есть хотя бы одна функция с прочерком «−» (не принадлежит классу):</div>
+          <ul style="margin: 8px 0 8px 20px;">
+            <li>Не лежит в T₀: <b>Да</b> (содержит функцию вне T₀)</li>
+            <li>Не лежит в T₁: <b>Да</b> (содержит функцию вне T₁)</li>
+            <li>Не лежит в S: <b>Да</b> (содержит несамодвойственную функцию)</li>
+            <li>Не лежит в M: <b>Да</b> (содержит немонотонную функцию)</li>
+            <li>Не лежит в L: <b>Да</b> (содержит нелинейную функцию)</li>
+          </ul>
+          <div>Следовательно, с помощью суперпозиций этих функций можно выразить <i>абсолютно любую</i> булеву функцию!</div>
+        `;
+      } else {
+        const missing = [];
+        if (!hasNotT0) missing.push('T₀ (все функции сохраняют 0)');
+        if (!hasNotT1) missing.push('T₁ (все функции сохраняют 1)');
+        if (!hasNotS) missing.push('S (все функции самодвойственны)');
+        if (!hasNotM) missing.push('M (все функции монотонны)');
+        if (!hasNotL) missing.push('L (все функции линейны)');
+
+        vBox.innerHTML = `
+          <div style="color: var(--danger); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">
+            ✗ Система НЕ ПОЛНА
+          </div>
+          <div>Набор целиком содержится в предполном классе: <b>${missing.join(', ')}</b>.</div>
+          <div style="margin-top: 6px;">Никакими суперпозициями невозможно покинуть данный замкнутый класс. Например, суперпозиция линейных функций всегда линейна, а монотонных — монотонна.</div>
+        `;
+      }
+    }
+
+    // --- TAB 3: EUCLID & BEZOUT ---
+    function setEuclidPreset(a, b) {
+      document.getElementById('euclidA').value = a;
+      document.getElementById('euclidB').value = b;
+      calcEuclid();
+    }
+
+    function calcEuclid() {
+      let a = parseInt(document.getElementById('euclidA').value, 10);
+      let b = parseInt(document.getElementById('euclidB').value, 10);
+      if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) return;
+
+      let log = `Прямой ход алгоритма Евклида для a = ${a}, b = ${b}:\n\n`;
+      let origA = a, origB = b;
+
+      while (b !== 0) {
+        let q = Math.floor(a / b);
+        let r = a % b;
+        log += `${a} = ${b} × ${q} + ${r}\n`;
+        a = b;
+        b = r;
+      }
+      const gcd = a;
+      log += `\nНОД(${origA}, ${origB}) = ${gcd}\n\n`;
+
+      // Extended step
+      log += `Обратный ход (нахождение коэффициентов Безу x, y):\n`;
+      function extGCD(x, y) {
+        if (y === 0) return { d: x, s: 1, t: 0 };
+        let res = extGCD(y, x % y);
+        return {
+          d: res.d,
+          s: res.t,
+          t: res.s - Math.floor(x / y) * res.t
+        };
+      }
+      const res = extGCD(origA, origB);
+
+      log += `${origA} × (${res.s}) + ${origB} × (${res.t}) = ${gcd}\n`;
+      document.getElementById('euclidLog').textContent = log;
+      document.getElementById('bezoutFormula').textContent = `${gcd} = ${origA} · (${res.s}) + ${origB} · (${res.t})`;
+
+      if (gcd === 1) {
+        let inv = ((res.t % origA) + origA) % origA;
+        document.getElementById('modInverseResult').textContent = `${origB}⁻¹ mod ${origA} = ${inv} (т.к. ${origB} · ${inv} ≡ 1 mod ${origA})`;
+      } else {
+        document.getElementById('modInverseResult').textContent = `Обратный элемент не существует, так как НОД(${origA}, ${origB}) = ${gcd} ≠ 1.`;
+      }
+    }
+
+    // --- TAB 4: RSA ---
+    let currentRSA = {};
+
+    function isPrime(num) {
+      if (num <= 1) return false;
+      if (num <= 3) return true;
+      if (num % 2 === 0 || num % 3 === 0) return false;
+      for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
+      }
+      return true;
+    }
+
+    function modPow(base, exp, mod) {
+      let res = 1n;
+      let b = BigInt(base) % BigInt(mod);
+      let e = BigInt(exp);
+      let m = BigInt(mod);
+      while (e > 0n) {
+        if (e % 2n === 1n) res = (res * b) % m;
+        b = (b * b) % m;
+        e = e / 2n;
+      }
+      return Number(res);
+    }
+
+    function setRsaPrimes(p, q) {
+      document.getElementById('rsaP').value = p;
+      document.getElementById('rsaQ').value = q;
+      generateRSA();
+    }
+
+    function generateRSA() {
+      const p = parseInt(document.getElementById('rsaP').value, 10);
+      const q = parseInt(document.getElementById('rsaQ').value, 10);
+
+      if (!isPrime(p) || !isPrime(q) || p === q) {
+        alert('Пожалуйста, введите два РАЗЛИЧНЫХ простых числа p и q!');
+        return;
+      }
+
+      const n = p * q;
+      const phi = (p - 1) * (q - 1);
+
+      function gcd(a, b) { while (b) { let t = b; b = a % b; a = t; } return a; }
+      let e = 65537;
+      if (e >= phi || gcd(e, phi) !== 1) {
+        e = 3;
+        while (e < phi) {
+          if (gcd(e, phi) === 1) break;
+          e += 2;
+        }
+      }
+
+      function extGCD(a, b) {
+        if (b === 0) return { d: a, x: 1, y: 0 };
+        let res = extGCD(b, a % b);
+        return { d: res.d, x: res.y, y: res.x - Math.floor(a / b) * res.y };
+      }
+      let bezout = extGCD(e, phi);
+      let d = ((bezout.x % phi) + phi) % phi;
+
+      currentRSA = { p, q, n, phi, e, d };
+
+      document.getElementById('rsaN').textContent = `${n} (${p} × ${q})`;
+      document.getElementById('rsaPhi').textContent = `${phi} (${p-1} × ${q-1})`;
+      document.getElementById('rsaPubKey').textContent = `(e = ${e}, n = ${n})`;
+      document.getElementById('rsaPrivKey').textContent = `(d = ${d}, n = ${n})`;
+
+      testEncrypt();
+    }
+
+    function testEncrypt() {
+      if (!currentRSA.n) generateRSA();
+      let m = parseInt(document.getElementById('rsaMsg').value, 10);
+      if (isNaN(m) || m < 0) m = 42;
+      if (m >= currentRSA.n) {
+        m = currentRSA.n - 1;
+        document.getElementById('rsaMsg').value = m;
+      }
+
+      const c = modPow(m, currentRSA.e, currentRSA.n);
+      document.getElementById('rsaCipher').textContent = c;
+
+      const decrypted = modPow(c, currentRSA.d, currentRSA.n);
+      document.getElementById('rsaDecrypted').textContent = decrypted;
+
+      const statusBox = document.getElementById('rsaMatchStatus');
+      if (decrypted === m) {
+        statusBox.innerHTML = `<span class="badge yes">✓ Сообщение успешно восстановлено: ${decrypted} === ${m}</span>`;
+      } else {
+        statusBox.innerHTML = `<span class="badge no">✗ Ошибка расшифрования</span>`;
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderKarnaugh();
+      applyPostPreset();
+      calcEuclid();
+      generateRSA();
+    });
+  </script>
+</body>
+</html>
