@@ -1,0 +1,612 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Конструктор и анализатор отношений | Курс дискретной математики</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+    }
+    button.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+      border-color: var(--accent);
+    }
+    .matrix-table {
+      border-collapse: collapse;
+      margin: 0 auto 16px;
+    }
+    .matrix-table th, .matrix-table td {
+      width: 42px;
+      height: 42px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+    }
+    .matrix-table th {
+      background: #090d16;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .matrix-cell {
+      cursor: pointer;
+      font-weight: 700;
+      font-family: monospace;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .matrix-cell.cell-1 {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+    }
+    .matrix-cell.cell-0 {
+      background: #0f172a;
+      color: #64748b;
+    }
+    .matrix-cell:hover {
+      filter: brightness(1.3);
+    }
+    .prop-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .prop-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .prop-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .badge-status {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-yes { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .status-no { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .status-neutral { background: #334155; color: var(--text-muted); }
+    .type-banner {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 8px;
+      background: #090d16;
+      border: 1px dashed var(--accent);
+      text-align: center;
+      font-size: 1.05rem;
+    }
+    .svg-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    svg {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Конструктор и анализатор бинарных отношений</h1>
+    <p>Курс «Дискретная математика и матрицы» — Глава 2: Свойства отношений, эквивалентность и порядок</p>
+  </div>
+
+  <div class="container">
+    <!-- Левая колонка: Матрица и граф -->
+    <div class="card">
+      <div class="card-title">
+        <span>Орграф и матрица отношения</span>
+        <div class="btn-group" style="margin-bottom: 0;">
+          <button id="size-3" onclick="setSize(3)">N = 3</button>
+          <button id="size-4" class="active" onclick="setSize(4)">N = 4</button>
+          <button id="size-5" onclick="setSize(5)">N = 5</button>
+        </div>
+      </div>
+
+      <div class="svg-container">
+        <svg id="graph-svg" width="460" height="320" viewBox="0 0 460 320"></svg>
+      </div>
+
+      <div class="card-title" style="margin-top: 20px; font-size: 1.05rem;">
+        <span>Булева матрица $M_R$ (кликните ячейку для изменения)</span>
+      </div>
+      <div id="matrix-container" style="overflow-x: auto;"></div>
+
+      <div class="btn-group" style="justify-content: center;">
+        <button onclick="makeReflexive()">Рефлексивное замыкание</button>
+        <button onclick="makeSymmetric()">Симметричное замыкание</button>
+        <button onclick="makeTransitive()">Транзитивное замыкание (Уоршелл)</button>
+        <button onclick="clearMatrix()">Очистить</button>
+      </div>
+    </div>
+
+    <!-- Правая колонка: Анализ свойств -->
+    <div class="card">
+      <div class="card-title">Пресеты отношений</div>
+      <div class="btn-group">
+        <button onclick="applyPreset('equivalence')">Эквивалентность (разбиение)</button>
+        <button onclick="applyPreset('poset')">Частичный порядок (делимость)</button>
+        <button onclick="applyPreset('linear')">Линейный порядок (&le;)</button>
+        <button onclick="applyPreset('strict')">Строгий порядок (&lt;)</button>
+        <button onclick="applyPreset('cycle')">Ориентированный цикл</button>
+      </div>
+
+      <div class="card-title" style="margin-top: 20px;">Анализ 5 свойств отношения</div>
+      <div class="prop-list">
+        <div class="prop-item">
+          <div>
+            <div class="prop-name">Рефлексивность</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">&forall; x (x R x) — все диагональные ячейки = 1</div>
+          </div>
+          <span class="badge-status" id="prop-refl">...</span>
+        </div>
+
+        <div class="prop-item">
+          <div>
+            <div class="prop-name">Антирефлексивность</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">&forall; x (&not;(x R x)) — все диагональные ячейки = 0</div>
+          </div>
+          <span class="badge-status" id="prop-irrefl">...</span>
+        </div>
+
+        <div class="prop-item">
+          <div>
+            <div class="prop-name">Симметричность</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">x R y &rArr; y R x — матрица симметрична относительно диагонали</div>
+          </div>
+          <span class="badge-status" id="prop-sym">...</span>
+        </div>
+
+        <div class="prop-item">
+          <div>
+            <div class="prop-name">Антисимметричность</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">(x R y &and; y R x) &rArr; x = y — нет взаимных стрелок между разными вершинами</div>
+          </div>
+          <span class="badge-status" id="prop-antisym">...</span>
+        </div>
+
+        <div class="prop-item">
+          <div>
+            <div class="prop-name">Транзитивность</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">(x R y &and; y R z) &rArr; x R z — пути длины 2 замыкаются прямой стрелкой</div>
+          </div>
+          <span class="badge-status" id="prop-trans">...</span>
+        </div>
+      </div>
+
+      <div class="type-banner" id="type-banner">
+        Определение типа отношения...
+      </div>
+
+      <div id="extra-info" style="margin-top: 16px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;"></div>
+    </div>
+  </div>
+
+  <script>
+    let N = 4;
+    let matrix = [];
+
+    function initMatrix(size) {
+      N = size;
+      matrix = Array.from({ length: N }, () => Array(N).fill(0));
+    }
+
+    function setSize(size) {
+      document.getElementById(`size-${N}`).classList.remove('active');
+      initMatrix(size);
+      document.getElementById(`size-${size}`).classList.add('active');
+      applyPreset('equivalence');
+    }
+
+    function toggleCell(i, j) {
+      matrix[i][j] = matrix[i][j] ? 0 : 1;
+      renderAll();
+    }
+
+    function renderMatrix() {
+      const container = document.getElementById('matrix-container');
+      let html = '<table class="matrix-table"><thead><tr><th></th>';
+      for (let j = 0; j < N; j++) html += `<th>${j + 1}</th>`;
+      html += '</tr></thead><tbody>';
+
+      for (let i = 0; i < N; i++) {
+        html += `<tr><th>${i + 1}</th>`;
+        for (let j = 0; j < N; j++) {
+          const val = matrix[i][j];
+          html += `<td class="matrix-cell cell-${val}" onclick="toggleCell(${i}, ${j})">${val}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function getCoords() {
+      const cx = 230, cy = 160, r = 110;
+      const coords = [];
+      for (let i = 0; i < N; i++) {
+        const angle = (2 * Math.PI * i / N) - Math.PI / 2;
+        coords.push({
+          x: cx + r * Math.cos(angle),
+          y: cy + r * Math.sin(angle)
+        });
+      }
+      return coords;
+    }
+
+    function renderGraph() {
+      const svg = document.getElementById('graph-svg');
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-both" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#22c55e" />
+          </marker>
+        </defs>
+      `;
+
+      const coords = getCoords();
+
+      // Draw edges
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          if (matrix[i][j]) {
+            if (i === j) {
+              // Loop
+              const p = coords[i];
+              const angle = Math.atan2(p.y - 160, p.x - 230);
+              const lx = p.x + 28 * Math.cos(angle);
+              const ly = p.y + 28 * Math.sin(angle);
+              
+              const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              circle.setAttribute('cx', lx);
+              circle.setAttribute('cy', ly);
+              circle.setAttribute('r', '14');
+              circle.setAttribute('fill', 'none');
+              circle.setAttribute('stroke', '#a855f7');
+              circle.setAttribute('stroke-width', '2');
+              svg.appendChild(circle);
+            } else {
+              // Edge between i and j
+              const p1 = coords[i];
+              const p2 = coords[j];
+              const isMutual = matrix[j][i] === 1;
+
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              let d = '';
+
+              if (isMutual) {
+                // Curved arc
+                const dx = p2.x - p1.x, dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const mx = (p1.x + p2.x)/2 - dy * 0.18;
+                const my = (p1.y + p2.y)/2 + dx * 0.18;
+                d = `M ${p1.x} ${p1.y} Q ${mx} ${my} ${p2.x} ${p2.y}`;
+                path.setAttribute('marker-end', 'url(#arrow-both)');
+                path.setAttribute('stroke', '#22c55e');
+              } else {
+                // Straight or slight curve
+                d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+                path.setAttribute('marker-end', 'url(#arrow)');
+                path.setAttribute('stroke', '#38bdf8');
+              }
+
+              path.setAttribute('d', d);
+              path.setAttribute('fill', 'none');
+              path.setAttribute('stroke-width', '2');
+              path.setAttribute('opacity', '0.85');
+              svg.appendChild(path);
+            }
+          }
+        }
+      }
+
+      // Draw vertices
+      for (let i = 0; i < N; i++) {
+        const p = coords[i];
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', p.x);
+        circle.setAttribute('cy', p.y);
+        circle.setAttribute('r', '18');
+        circle.setAttribute('fill', '#1e293b');
+        circle.setAttribute('stroke', '#38bdf8');
+        circle.setAttribute('stroke-width', '2.5');
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', p.x);
+        text.setAttribute('y', p.y + 5);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#f8fafc');
+        text.setAttribute('font-weight', 'bold');
+        text.setAttribute('font-size', '14');
+        text.textContent = (i + 1).toString();
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        svg.appendChild(g);
+      }
+    }
+
+    function checkProperties() {
+      let isRefl = true;
+      let isIrrefl = true;
+      for (let i = 0; i < N; i++) {
+        if (matrix[i][i] !== 1) isRefl = false;
+        if (matrix[i][i] !== 0) isIrrefl = false;
+      }
+
+      let isSym = true;
+      let isAntisym = true;
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          if (matrix[i][j] !== matrix[j][i]) isSym = false;
+          if (i !== j && matrix[i][j] === 1 && matrix[j][i] === 1) isAntisym = false;
+        }
+      }
+
+      let isTrans = true;
+      let transViolations = [];
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          if (matrix[i][j]) {
+            for (let k = 0; k < N; k++) {
+              if (matrix[j][k] && !matrix[i][k]) {
+                isTrans = false;
+                if (transViolations.length < 2) {
+                  transViolations.push(`(${i+1}&rarr;${j+1} и ${j+1}&rarr;${k+1}, но нет ${i+1}&rarr;${k+1})`);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Update UI badges
+      setPropBadge('prop-refl', isRefl);
+      setPropBadge('prop-irrefl', isIrrefl);
+      setPropBadge('prop-sym', isSym);
+      setPropBadge('prop-antisym', isAntisym);
+      setPropBadge('prop-trans', isTrans);
+
+      // Determine classification
+      const banner = document.getElementById('type-banner');
+      const extra = document.getElementById('extra-info');
+      extra.innerHTML = '';
+
+      if (isRefl && isSym && isTrans) {
+        banner.style.borderColor = '#22c55e';
+        banner.innerHTML = '<strong style="color:#22c55e;">Отношение эквивалентности (&sim;)</strong>';
+        // Compute equivalence classes
+        const classes = [];
+        const visited = Array(N).fill(false);
+        for (let i = 0; i < N; i++) {
+          if (!visited[i]) {
+            const cls = [];
+            for (let j = 0; j < N; j++) {
+              if (matrix[i][j]) {
+                cls.push(j + 1);
+                visited[j] = true;
+              }
+            }
+            classes.push(`[${cls[0]}] = {${cls.join(', ')}}`);
+          }
+        }
+        extra.innerHTML = `<strong>Разбиение на классы эквивалентности:</strong><br>${classes.join('<br>')}<br>Фактор-множество A / &sim; содержит ${classes.length} класс(ов).`;
+      } else if (isRefl && isAntisym && isTrans) {
+        // Check if linear
+        let isLinear = true;
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            if (i !== j && !matrix[i][j] && !matrix[j][i]) isLinear = false;
+          }
+        }
+        if (isLinear) {
+          banner.style.borderColor = '#38bdf8';
+          banner.innerHTML = '<strong style="color:#38bdf8;">Отношение линейного (тотального) порядка (&le;)</strong>';
+          extra.innerHTML = 'Любые два элемента сравнимы. Множество образует линейную цепь.';
+        } else {
+          banner.style.borderColor = '#eab308';
+          banner.innerHTML = '<strong style="color:#eab308;">Отношение частичного порядка (Poset)</strong>';
+          extra.innerHTML = 'Рефлексивно, антисимметрично и транзитивно. Имеются несравнимые элементы (ветвления).';
+        }
+      } else if (isIrrefl && isAntisym && isTrans) {
+        banner.style.borderColor = '#f97316';
+        banner.innerHTML = '<strong style="color:#f97316;">Отношение строгого порядка (&lt;)</strong>';
+        extra.innerHTML = 'Антирефлексивно, антисимметрично и транзитивно (ациклический орграф).';
+      } else if (isRefl && isSym && !isTrans) {
+        banner.style.borderColor = '#a855f7';
+        banner.innerHTML = '<strong style="color:#a855f7;">Отношение толерантности (сходства)</strong>';
+        extra.innerHTML = `Рефлексивно и симметрично, но транзитивность нарушена: ${transViolations.join(', ')}.`;
+      } else {
+        banner.style.borderColor = '#64748b';
+        banner.innerHTML = '<span style="color:#94a3b8;">Общее бинарное отношение</span>';
+        if (transViolations.length > 0) {
+          extra.innerHTML = `Нарушение транзитивности: ${transViolations.join(', ')}.`;
+        }
+      }
+    }
+
+    function setPropBadge(id, isTrue) {
+      const el = document.getElementById(id);
+      if (isTrue) {
+        el.className = 'badge-status status-yes';
+        el.textContent = 'ДА';
+      } else {
+        el.className = 'badge-status status-no';
+        el.textContent = 'НЕТ';
+      }
+    }
+
+    function renderAll() {
+      renderMatrix();
+      renderGraph();
+      checkProperties();
+    }
+
+    function makeReflexive() {
+      for (let i = 0; i < N; i++) matrix[i][i] = 1;
+      renderAll();
+    }
+
+    function makeSymmetric() {
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          if (matrix[i][j]) matrix[j][i] = 1;
+        }
+      }
+      renderAll();
+    }
+
+    function makeTransitive() {
+      // Warshall algorithm
+      for (let k = 0; k < N; k++) {
+        for (let i = 0; i < N; i++) {
+          for (let j = 0; j < N; j++) {
+            matrix[i][j] = matrix[i][j] || (matrix[i][k] && matrix[k][j]) ? 1 : 0;
+          }
+        }
+      }
+      renderAll();
+    }
+
+    function clearMatrix() {
+      initMatrix(N);
+      renderAll();
+    }
+
+    function applyPreset(name) {
+      initMatrix(N);
+      if (name === 'equivalence') {
+        // Partition: {1, 2}, {3, 4}
+        matrix[0][0] = matrix[1][1] = matrix[0][1] = matrix[1][0] = 1;
+        matrix[2][2] = matrix[2][2] = 1;
+        if (N >= 4) {
+          matrix[2][3] = matrix[3][2] = matrix[3][3] = 1;
+        }
+        if (N >= 5) matrix[4][4] = 1;
+      } else if (name === 'poset') {
+        // Divisibility-like: 1 divides all, 2 divides 4
+        for (let i = 0; i < N; i++) matrix[i][i] = 1;
+        for (let j = 1; j < N; j++) matrix[0][j] = 1; // 1 divides all
+        if (N >= 4) matrix[1][3] = 1; // 2 divides 4
+      } else if (name === 'linear') {
+        // <=: upper triangle all 1s
+        for (let i = 0; i < N; i++) {
+          for (let j = i; j < N; j++) matrix[i][j] = 1;
+        }
+      } else if (name === 'strict') {
+        // <: strictly upper triangle 1s
+        for (let i = 0; i < N; i++) {
+          for (let j = i + 1; j < N; j++) matrix[i][j] = 1;
+        }
+      } else if (name === 'cycle') {
+        for (let i = 0; i < N; i++) {
+          matrix[i][(i + 1) % N] = 1;
+        }
+      }
+      renderAll();
+    }
+
+    // Init
+    initMatrix(4);
+    applyPreset('equivalence');
+  </script>
+</body>
+</html>
